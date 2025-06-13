@@ -1,8 +1,8 @@
+
 "use client";
 
 import React, { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'react';
 import Image from 'next/image';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Paperclip, Mic, Send, Camera, XCircle, Loader2 } from 'lucide-react';
@@ -95,80 +95,112 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
 
   return (
     <TooltipProvider>
-    <form onSubmit={handleSubmit} className="p-4 border-t bg-card">
-      {imagePreview && (
-        <div className="mb-2 relative w-32 h-32 rounded-md overflow-hidden border">
-          <Image src={imagePreview} alt="Preview" layout="fill" objectFit="cover" data-ai-hint="image preview"/>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute top-1 right-1 h-6 w-6 bg-black/50 hover:bg-black/70 text-white rounded-full"
-            onClick={handleRemoveImage}
-            type="button"
-          >
-            <XCircle className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-      <div className="flex items-start gap-2">
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={isListening ? "Listening..." : "Type your message or ask about an image..."}
-          className="flex-1 resize-none min-h-[40px]"
-          rows={1}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit(e);
-            }
-          }}
-          disabled={isLoading}
-        />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={isLoading} aria-label="Attach image">
-              <Paperclip className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent><p>Attach Image</p></TooltipContent>
-        </Tooltip>
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="image/*"
-          onChange={handleImageChange}
-          className="hidden"
-          disabled={isLoading}
-        />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button type="button" variant="ghost" size="icon" onClick={onOpenCamera} disabled={isLoading} aria-label="Open camera">
-              <Camera className="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent><p>Use Camera</p></TooltipContent>
-        </Tooltip>
-         <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              type="button" 
-              variant={isListening ? "destructive" : "ghost"} 
-              size="icon" 
-              onClick={toggleListening} 
-              disabled={isLoading || !speechSupported}
-              aria-label={isListening ? "Stop listening" : "Start voice input"}
+      <form onSubmit={handleSubmit} className="p-4 border-t bg-card">
+        {imagePreview && (
+          <div className="mb-2 relative w-24 h-24 rounded-md overflow-hidden border"> {/* Adjusted preview size */}
+            <Image src={imagePreview} alt="Preview" layout="fill" objectFit="cover" data-ai-hint="image preview"/>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-1 right-1 h-6 w-6 bg-black/50 hover:bg-black/70 text-white rounded-full z-10"
+              onClick={handleRemoveImage}
+              type="button"
             >
-              <Mic className="h-5 w-5" />
+              <XCircle className="h-4 w-4" />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent><p>{isListening ? "Stop Listening" : (speechSupported ? "Voice Input" : "Voice Not Supported")}</p></TooltipContent>
-        </Tooltip>
-        <Button type="submit" size="icon" disabled={isLoading || (!text.trim() && !imageFile)} aria-label="Send message">
-          {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-        </Button>
-      </div>
-    </form>
+          </div>
+        )}
+        <div className="flex items-center w-full gap-2 px-3 py-1.5 rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-background">
+          {/* Left Icons Group */}
+          <div className="flex items-center gap-0.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => fileInputRef.current?.click()} 
+                  disabled={isLoading} 
+                  aria-label="Attach image"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                >
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Attach Image</p></TooltipContent>
+            </Tooltip>
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+              disabled={isLoading}
+            />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={onOpenCamera} 
+                  disabled={isLoading} 
+                  aria-label="Open camera"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                >
+                  <Camera className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Use Camera</p></TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Textarea */}
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={isListening ? "Listening..." : "Message..."}
+            className="flex-1 resize-none bg-transparent border-0 focus:ring-0 p-0 self-center min-h-[24px] max-h-[120px] text-sm"
+            rows={1}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+            disabled={isLoading}
+          />
+
+          {/* Right Icons Group */}
+          <div className="flex items-center gap-0.5">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  type="button" 
+                  variant={isListening ? "destructive" : "ghost"} 
+                  size="icon" 
+                  onClick={toggleListening} 
+                  disabled={isLoading || !speechSupported}
+                  aria-label={isListening ? "Stop listening" : "Start voice input"}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                >
+                  <Mic className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>{isListening ? "Stop Listening" : (speechSupported ? "Voice Input" : "Voice Not Supported")}</p></TooltipContent>
+            </Tooltip>
+            <Button 
+              type="submit" 
+              size="icon" 
+              disabled={isLoading || (!text.trim() && !imageFile)} 
+              aria-label="Send message"
+              className="h-8 w-8 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full"
+            >
+              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+            </Button>
+          </div>
+        </div>
+      </form>
     </TooltipProvider>
   );
 }
