@@ -1,20 +1,20 @@
+
 "use client";
 
-import { useState, useCallback, useEffect } from 'react';
-import type { Message } from '@/types';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import type { Message, ChatSession } from '@/types';
 import { analyzeImageQuery } from '@/ai/flows/analyze-image-query';
 import { generateContentFromQuery } from '@/ai/flows/generate-content-from-query';
 
 import { ChatInterface } from '@/components/chat-interface';
 import { InputArea } from '@/components/input-area';
-import { ThemeToggle } from '@/components/theme-toggle';
-import { Logo } from '@/components/logo';
 import { CameraCaptureModal } from '@/components/camera-capture-modal';
 import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+import { AppSidebar } from '@/components/app-sidebar';
+import { PageHeader } from '@/components/page-header';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { v4 as uuidv4 } from 'uuid';
 
-
-// Helper to convert File to Data URI
 async function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -24,17 +24,78 @@ async function fileToDataUri(file: File): Promise<string> {
   });
 }
 
+const LOCAL_STORAGE_CHAT_HISTORY_KEY = 'patoovision_chat_history';
+const LOCAL_STORAGE_CURRENT_CHAT_ID_KEY = 'patoovision_current_chat_id';
+
 export default function HomePage() {
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const addMessage = (message: Omit<Message, 'id' | 'timestamp'>) => {
-    setMessages((prev) => [...prev, { ...message, id: uuidv4(), timestamp: new Date() }]);
+  useEffect(() => {
+    const storedHistory = localStorage.getItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
+    const storedChatId = localStorage.getItem(LOCAL_STORAGE_CURRENT_CHAT_ID_KEY);
+    let activeChatId = storedChatId;
+
+    if (storedHistory) {
+      const parsedHistory = JSON.parse(storedHistory) as ChatSession[];
+      setChatHistory(parsedHistory);
+      if (!activeChatId && parsedHistory.length > 0) {
+        activeChatId = parsedHistory[0].id;
+      }
+    }
+
+    if (activeChatId) {
+      setCurrentChatId(activeChatId);
+      const currentSession = (JSON.parse(storedHistory || '[]') as ChatSession[]).find(s => s.id === activeChatId);
+      if (currentSession) {
+        setMessages(currentSession.messages);
+      } else if (JSON.parse(storedHistory || '[]').length === 0) {
+        startNewChat();
+      }
+    } else {
+      startNewChat();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (chatHistory.length > 0) {
+      localStorage.setItem(LOCAL_STORAGE_CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
+    } else {
+      localStorage.removeItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
+    }
+  }, [chatHistory]);
+
+  useEffect(() => {
+    if (currentChatId) {
+      localStorage.setItem(LOCAL_STORAGE_CURRENT_CHAT_ID_KEY, currentChatId);
+      const currentSession = chatHistory.find(s => s.id === currentChatId);
+      if (currentSession) {
+        setMessages(currentSession.messages);
+      }
+    } else {
+       localStorage.removeItem(LOCAL_STORAGE_CURRENT_CHAT_ID_KEY);
+    }
+  }, [currentChatId, chatHistory]);
+
+
+  const addMessageToCurrentChat = (message: Omit<Message, 'id' | 'timestamp'>) => {
+    const newMessage: Message = { ...message, id: uuidv4(), timestamp: new Date() };
+    setMessages((prev) => [...prev, newMessage]);
+    setChatHistory((prevHistory) =>
+      prevHistory.map((session) =>
+        session.id === currentChatId
+          ? { ...session, messages: [...session.messages, newMessage], lastUpdated: new Date() }
+          : session
+      )
+    );
   };
 
-  const updateLastMessage = (update: Partial<Message>) => {
+  const updateLastMessageInCurrentChat = (update: Partial<Message>) => {
     setMessages((prev) => {
       const newMessages = [...prev];
       if (newMessages.length > 0) {
@@ -42,111 +103,162 @@ export default function HomePage() {
       }
       return newMessages;
     });
+    setChatHistory((prevHistory) =>
+      prevHistory.map((session) => {
+        if (session.id === currentChatId && session.messages.length > 0) {
+          const updatedMessages = [...session.messages];
+          updatedMessages[updatedMessages.length - 1] = { ...updatedMessages[updatedMessages.length - 1], ...update };
+          return { ...session, messages: updatedMessages, lastUpdated: new Date() };
+        }
+        return session;
+      })
+    );
   };
 
   const handleSendMessage = useCallback(async (text: string, imageFile?: File) => {
-    setIsLoading(true);
+    if (!currentChatId) {
+      toast({ title: "Error", description: "No active chat session.", variant: "destructive" });
+      return;
+    }
+    setIsAiLoading(true);
     const userMessageText = text || (imageFile ? "Image attached" : "Empty message");
 
     let imageUrl: string | undefined;
     if (imageFile) {
       try {
         imageUrl = await fileToDataUri(imageFile);
-        addMessage({ role: 'user', text: userMessageText, imageUrl });
+        addMessageToCurrentChat({ role: 'user', text: userMessageText, imageUrl });
       } catch (error) {
         console.error("Error converting file to data URI:", error);
         toast({ title: "Image Upload Error", description: "Could not process the image.", variant: "destructive" });
-        setIsLoading(false);
+        setIsAiLoading(false);
         return;
       }
     } else {
-      addMessage({ role: 'user', text: userMessageText });
+      addMessageToCurrentChat({ role: 'user', text: userMessageText });
     }
     
-    addMessage({ role: 'assistant', text: '', isLoading: true }); // Placeholder for AI response
+    addMessageToCurrentChat({ role: 'assistant', text: '', isLoading: true });
 
     try {
       let aiResponseText: string;
-      if (imageUrl) { // If there's an image, always use analyzeImageQuery
+      if (imageUrl) {
         const aiResponse = await analyzeImageQuery({ photoDataUri: imageUrl, query: text || "Describe this image." });
         aiResponseText = aiResponse.answer;
-      } else { // Text-only query
+      } else {
         const aiResponse = await generateContentFromQuery({ query: text });
         aiResponseText = aiResponse.content;
       }
-      updateLastMessage({ text: aiResponseText, isLoading: false });
+      updateLastMessageInCurrentChat({ text: aiResponseText, isLoading: false });
     } catch (error) {
       console.error('AI Error:', error);
       let errorMessage = "Sorry, something went wrong.";
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-      updateLastMessage({ text: '', error: errorMessage, isLoading: false });
-      toast({
-        title: "AI Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      updateLastMessageInCurrentChat({ text: '', error: errorMessage, isLoading: false });
+      toast({ title: "AI Error", description: errorMessage, variant: "destructive" });
     } finally {
-      setIsLoading(false);
+      setIsAiLoading(false);
     }
-  }, [toast]);
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChatId, toast]);
 
   const handleCameraCapture = useCallback(async (imageDataUri: string) => {
-    setIsCameraModalOpen(false); // Close modal first
-    setIsLoading(true);
+    if (!currentChatId) {
+      toast({ title: "Error", description: "No active chat session.", variant: "destructive" });
+      return;
+    }
+    setIsCameraModalOpen(false);
+    setIsAiLoading(true);
 
-    addMessage({ role: 'user', text: "Image captured from camera", imageUrl: imageDataUri });
-    addMessage({ role: 'assistant', text: '', isLoading: true });
+    addMessageToCurrentChat({ role: 'user', text: "Image captured from camera", imageUrl: imageDataUri });
+    addMessageToCurrentChat({ role: 'assistant', text: '', isLoading: true });
 
     try {
-      // For now, let's assume a generic query for camera captures.
-      // A more sophisticated approach might allow user to type a query *after* capture but before sending.
       const queryText = "What do you see in this image?"; 
       const aiResponse = await analyzeImageQuery({ photoDataUri: imageDataUri, query: queryText });
-      updateLastMessage({ text: aiResponse.answer, isLoading: false });
+      updateLastMessageInCurrentChat({ text: aiResponse.answer, isLoading: false });
     } catch (error) {
       console.error('AI Camera Error:', error);
       let errorMessage = "Sorry, something went wrong with camera image analysis.";
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-      updateLastMessage({ text: '', error: errorMessage, isLoading: false });
-      toast({
-        title: "AI Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      updateLastMessageInCurrentChat({ text: '', error: errorMessage, isLoading: false });
+      toast({ title: "AI Error", description: errorMessage, variant: "destructive" });
     } finally {
-      setIsLoading(false);
+      setIsAiLoading(false);
     }
-  }, [toast]);
-  
-  // Install uuid if not already: npm install uuid && npm install @types/uuid -D
-  // If not using uuid, a simpler id like Date.now().toString() + Math.random().toString() can be used for client-side only demo.
-  // For this example, ensuring uuid is available. If `package.json` needs update, I cannot do it.
-  // Assuming uuid is available for unique IDs.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChatId, toast]);
+
+  const startNewChat = () => {
+    const newSessionId = uuidv4();
+    const newSession: ChatSession = {
+      id: newSessionId,
+      title: `Chat ${chatHistory.length + 1}`,
+      messages: [],
+      createdAt: new Date(),
+      lastUpdated: new Date(),
+    };
+    setChatHistory((prev) => [newSession, ...prev]);
+    setCurrentChatId(newSessionId);
+    setMessages([]);
+  };
+
+  const selectChat = (id: string) => {
+    setCurrentChatId(id);
+    const selectedSession = chatHistory.find(s => s.id === id);
+    if (selectedSession) {
+      setMessages(selectedSession.messages);
+    }
+  };
+
+  const deleteChat = (id: string) => {
+    setChatHistory((prev) => prev.filter(s => s.id !== id));
+    if (currentChatId === id) {
+      if (chatHistory.length > 1) {
+        // Select the next available chat, or the first one if deleting the last one in a list with others
+        const remainingChats = chatHistory.filter(s => s.id !== id);
+        selectChat(remainingChats[0].id);
+      } else {
+        // If it was the last chat, start a new one
+        startNewChat();
+      }
+    }
+  };
+
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
-      <header className="p-4 border-b flex items-center justify-between shadow-sm">
-        <Logo />
-        <ThemeToggle />
-      </header>
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <ChatInterface messages={messages} />
-      </main>
-      <InputArea
-        onSendMessage={handleSendMessage}
-        isLoading={isLoading}
-        onOpenCamera={() => setIsCameraModalOpen(true)}
+    <SidebarProvider>
+      <AppSidebar
+        chatHistory={chatHistory}
+        currentChatId={currentChatId}
+        onNewChat={startNewChat}
+        onSelectChat={selectChat}
+        onDeleteChat={deleteChat}
       />
+      <div className="flex flex-col h-screen flex-1">
+        <PageHeader />
+        <main className="flex-1 flex flex-col overflow-hidden bg-background">
+          <ChatInterface messages={messages} />
+        </main>
+        <div className="flex justify-center bg-background">
+            <div className="w-full max-w-2xl px-2 pb-2">
+                 <InputArea
+                    onSendMessage={handleSendMessage}
+                    isLoading={isAiLoading}
+                    onOpenCamera={() => setIsCameraModalOpen(true)}
+                  />
+            </div>
+        </div>
+      </div>
       <CameraCaptureModal
         isOpen={isCameraModalOpen}
         onClose={() => setIsCameraModalOpen(false)}
         onCapture={handleCameraCapture}
       />
-    </div>
+    </SidebarProvider>
   );
 }
