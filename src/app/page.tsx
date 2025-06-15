@@ -41,21 +41,33 @@ export default function HomePage() {
     const storedHistory = localStorage.getItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
     const storedChatId = localStorage.getItem(LOCAL_STORAGE_CURRENT_CHAT_ID_KEY);
     let activeChatId = storedChatId;
+    let initialChatHistory: ChatSession[] = [];
 
     if (storedHistory) {
-      const parsedHistory = JSON.parse(storedHistory) as ChatSession[];
-      setChatHistory(parsedHistory);
-      if (!activeChatId && parsedHistory.length > 0) {
-        activeChatId = parsedHistory[0].id;
+      const parsedHistory = JSON.parse(storedHistory) as any[]; // Parse as any first
+      initialChatHistory = parsedHistory.map(session => ({
+        ...session,
+        messages: session.messages.map((message: any) => ({
+          ...message,
+          timestamp: new Date(message.timestamp), // Convert string to Date
+        })),
+        createdAt: new Date(session.createdAt), // Convert string to Date
+        lastUpdated: new Date(session.lastUpdated), // Convert string to Date
+      }));
+      setChatHistory(initialChatHistory);
+      if (!activeChatId && initialChatHistory.length > 0) {
+        activeChatId = initialChatHistory[0].id;
       }
     }
 
     if (activeChatId) {
       setCurrentChatId(activeChatId);
-      const currentSession = (JSON.parse(storedHistory || '[]') as ChatSession[]).find(s => s.id === activeChatId);
+      // Use initialChatHistory which has correct Date objects
+      const currentSession = initialChatHistory.find(s => s.id === activeChatId);
       if (currentSession) {
         setMessages(currentSession.messages);
-      } else if (JSON.parse(storedHistory || '[]').length === 0) {
+      } else if (initialChatHistory.length === 0) {
+        // This condition implies storedHistory was null or empty array
         startNewChat();
       }
     } else {
@@ -68,7 +80,6 @@ export default function HomePage() {
     if (chatHistory.length > 0) {
       localStorage.setItem(LOCAL_STORAGE_CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
     } else {
-      // If chat history becomes empty, remove it from localStorage
       const storedHistory = localStorage.getItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
       if (storedHistory) {
         localStorage.removeItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
@@ -209,11 +220,9 @@ export default function HomePage() {
       createdAt: new Date(),
       lastUpdated: new Date(),
     };
-    // Add to the beginning of the array so it appears at the top
     setChatHistory((prev) => [newSession, ...prev.filter(s => s.id !== newSessionId)]);
     setCurrentChatId(newSessionId);
-    setMessages([]); // Clear messages for the new chat
-     // Automatically start editing the title of the new chat
+    setMessages([]); 
     setEditingSessionDetails({ id: newSessionId, currentTitle: newSessionTitle });
   };
 
@@ -223,7 +232,7 @@ export default function HomePage() {
     if (selectedSession) {
       setMessages(selectedSession.messages);
     }
-    setEditingSessionDetails(null); // Cancel any ongoing edit when switching chats
+    setEditingSessionDetails(null); 
   };
 
   const deleteChat = (id: string) => {
@@ -250,7 +259,6 @@ export default function HomePage() {
   const handleSaveChatSessionTitle = (id: string, newTitle: string) => {
     if (!newTitle.trim()) {
       toast({ title: "Invalid Title", description: "Chat title cannot be empty.", variant: "destructive" });
-      // Optionally, revert to old title or a default
       const sessionToRevert = chatHistory.find(s => s.id === id);
       setEditingSessionDetails({id, currentTitle: sessionToRevert?.title || `Chat ${id.substring(0,8)}` });
       return;
@@ -303,5 +311,4 @@ export default function HomePage() {
     </SidebarProvider>
   );
 }
-
     
