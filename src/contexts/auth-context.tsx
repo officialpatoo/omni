@@ -1,36 +1,88 @@
 
 "use client";
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { Auth, User as FirebaseUser, onAuthStateChanged, signOut as firebaseSignOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
+import type { User } from '@/types';
+import { useRouter } from 'next/navigation';
 
-// This context is now a placeholder as authentication has been removed.
-// It can be repurposed or removed entirely if no longer needed for other global states.
-
-interface PlaceholderAuthContextType {
-  // Define any non-auth related global state if this context is repurposed
-  // For now, it's empty as auth is removed.
+interface AuthContextType {
+  user: User | null;
+  isLoading: boolean;
+  signIn: (email: string, pass: string) => Promise<FirebaseUser | null>;
+  signUp: (email: string, pass: string) => Promise<FirebaseUser | null>;
+  signOut: () => Promise<void>;
 }
 
-const PlaceholderAuthContext = createContext<PlaceholderAuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function PlaceholderAuthProvider({ children }: { children: React.ReactNode }) {
-  const value = {
-    // Provide values for the repurposed context if any
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+        });
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const signIn = async (email: string, pass: string): Promise<FirebaseUser | null> => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+      return userCredential.user;
+    } catch (error) {
+      console.error("Sign in error", error);
+      throw error; // Re-throw to be caught by UI
+    }
+  };
+  
+  const signUp = async (email: string, pass: string): Promise<FirebaseUser | null> => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+      return userCredential.user;
+    } catch (error) {
+      console.error("Sign up error", error);
+      throw error; // Re-throw to be caught by UI
+    }
   };
 
-  return (
-    <PlaceholderAuthContext.Provider value={value}>
-      {children}
-    </PlaceholderAuthContext.Provider>
-  );
+  const signOut = async () => {
+    setIsLoading(true);
+    await firebaseSignOut(auth);
+    setUser(null);
+    setIsLoading(false);
+    router.push('/auth/login'); // Redirect to login after sign out
+  };
+
+  const value = {
+    user,
+    isLoading,
+    signIn,
+    signUp,
+    signOut,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function usePlaceholderAuth() { // Renamed from useAuth
-  const context = useContext(PlaceholderAuthContext);
+export function useAuth() {
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    // This error can be removed if the context is not strictly required by all consumers
-    // throw new Error('usePlaceholderAuth must be used within a PlaceholderAuthProvider');
-    return {}; // Return an empty object or a default state
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 }

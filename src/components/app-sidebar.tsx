@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Sidebar,
   SidebarContent,
@@ -20,8 +21,8 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Logo } from '@/components/logo';
-import type { ChatSession } from '@/types';
-import { PlusCircle, MessageSquare, Trash2, Edit3, Check, X } from 'lucide-react';
+import type { ChatSession, User } from '@/types';
+import { PlusCircle, MessageSquare, Trash2, Edit3, Check, X, LogIn, UserPlus, UserCircle, LogOut, Settings } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useAuth } from '@/contexts/auth-context'; // Import useAuth
 
 interface AppSidebarProps {
   chatHistory: ChatSession[];
@@ -44,6 +46,8 @@ interface AppSidebarProps {
   onStartEditChatSession: (id: string, currentTitle: string) => void;
   onSaveChatSessionTitle: (id: string, newTitle: string) => void;
   onCancelEditChatSession: () => void;
+  user: User | null; // Add user prop
+  onSignOut: () => void; // Add onSignOut prop
 }
 
 export function AppSidebar({
@@ -56,9 +60,12 @@ export function AppSidebar({
   onStartEditChatSession,
   onSaveChatSessionTitle,
   onCancelEditChatSession,
+  user,
+  onSignOut,
 }: AppSidebarProps) {
   const pathname = usePathname();
   const [editedTitle, setEditedTitle] = useState('');
+  const { isLoading: isLoadingAuth } = useAuth();
 
   useEffect(() => {
     if (editingSessionDetails) {
@@ -84,23 +91,25 @@ export function AppSidebar({
         </Link>
       </SidebarHeader>
       <SidebarContent className="p-0">
-        <SidebarGroup className="p-2">
-          <SidebarMenuButton 
-            onClick={onNewChat} 
-            className="w-full justify-start"
-            tooltip="New Chat"
-            aria-label="Start a new chat"
-          >
-            <PlusCircle /> <span>New Chat</span>
-          </SidebarMenuButton>
-        </SidebarGroup>
+        {user && (
+          <SidebarGroup className="p-2">
+            <SidebarMenuButton 
+              onClick={onNewChat} 
+              className="w-full justify-start"
+              tooltip="New Chat"
+              aria-label="Start a new chat"
+            >
+              <PlusCircle /> <span>New Chat</span>
+            </SidebarMenuButton>
+          </SidebarGroup>
+        )}
 
-        {chatHistory.length > 0 && (
+        {user && chatHistory.length > 0 && (
           <SidebarGroup className="p-2 pt-0">
             <SidebarGroupLabel className="flex items-center">
               <MessageSquare /> Chat History
             </SidebarGroupLabel>
-            <ScrollArea className="h-[calc(100vh_-_12rem)]"> {/* Adjusted height */}
+            <ScrollArea className="h-[calc(100vh_-_18rem)]"> {/* Adjusted height for auth section */}
               <SidebarMenu>
                 {chatHistory.map((session) => (
                   <SidebarMenuItem key={session.id} className="relative group/menu-item">
@@ -146,7 +155,7 @@ export function AppSidebar({
                             size="icon"
                             className="h-7 w-7"
                             onClick={(e) => {
-                              e.stopPropagation(); // Prevent chat selection
+                              e.stopPropagation(); 
                               onStartEditChatSession(session.id, session.title || defaultTitle(session.id));
                             }}
                             aria-label="Edit chat title"
@@ -196,10 +205,46 @@ export function AppSidebar({
       <SidebarSeparator />
 
       <SidebarFooter className="p-2">
-        {/* Placeholder for any footer content if auth is removed, e.g. settings or help */}
+        {!isLoadingAuth && user ? (
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/profile'} tooltip="Profile & Settings">
+                <Link href="/profile" className="flex items-center w-full">
+                  <Avatar className="h-6 w-6 mr-0 group-data-[collapsible=icon]:mr-0">
+                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || user.email || 'User'} />
+                    <AvatarFallback className="text-xs">
+                      {user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : <UserCircle/>)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="truncate">{user.displayName || user.email}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton onClick={onSignOut} tooltip="Log Out">
+                    <LogOut /> <span>Log Out</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        ) : !isLoadingAuth && !user ? (
+          <SidebarMenu>
+            <SidebarMenuItem>
+               <SidebarMenuButton asChild isActive={pathname === '/auth/login'} tooltip="Login">
+                <Link href="/auth/login">
+                  <LogIn /><span>Login</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === '/auth/signup'} tooltip="Sign Up">
+                <Link href="/auth/signup">
+                  <UserPlus /><span>Sign Up</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        ) : null}
       </SidebarFooter>
     </Sidebar>
   );
 }
-
-    

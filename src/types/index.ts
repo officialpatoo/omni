@@ -19,10 +19,19 @@ export interface ChatSession {
   lastUpdated: Date;
 }
 
-// User type is removed as authentication is no longer used.
-// export interface User {
-//   uid: string;
-//   email: string | null;
-//   displayName: string | null;
-//   photoURL: string | null;
-// }
+export interface User {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+}
+
+export interface UserProfile extends Partial<User> {
+  bio?: string;
+}
+
+export interface AppSettings {
+  aiModel?: string;
+  theme?: 'light' | 'dark' | 'system';
+  notificationsEnabled?: boolean;
+}

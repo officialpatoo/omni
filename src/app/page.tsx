@@ -14,6 +14,9 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { PageHeader } from '@/components/page-header';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { v4 as uuidv4 } from 'uuid';
+import { useAuth } from '@/contexts/auth-context';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 async function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -24,10 +27,13 @@ async function fileToDataUri(file: File): Promise<string> {
   });
 }
 
-const LOCAL_STORAGE_CHAT_HISTORY_KEY = 'patoovision_chat_history';
-const LOCAL_STORAGE_CURRENT_CHAT_ID_KEY = 'patoovision_current_chat_id';
+const LOCAL_STORAGE_CHAT_HISTORY_KEY_PREFIX = 'patoovision_chat_history_';
+const LOCAL_STORAGE_CURRENT_CHAT_ID_KEY_PREFIX = 'patoovision_current_chat_id_';
 
 export default function HomePage() {
+  const { user, isLoading: isLoadingAuth, signOut } = useAuth();
+  const router = useRouter();
+
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatSession[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -37,67 +43,92 @@ export default function HomePage() {
 
   const [editingSessionDetails, setEditingSessionDetails] = useState<{ id: string; currentTitle: string } | null>(null);
 
+  const getChatHistoryKey = useCallback(() => user ? `${LOCAL_STORAGE_CHAT_HISTORY_KEY_PREFIX}${user.uid}` : null, [user]);
+  const getCurrentChatIdKey = useCallback(() => user ? `${LOCAL_STORAGE_CURRENT_CHAT_ID_KEY_PREFIX}${user.uid}` : null, [user]);
+
   useEffect(() => {
-    const storedHistory = localStorage.getItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
-    const storedChatId = localStorage.getItem(LOCAL_STORAGE_CURRENT_CHAT_ID_KEY);
-    let activeChatId = storedChatId;
-    let initialChatHistory: ChatSession[] = [];
-
-    if (storedHistory) {
-      const parsedHistory = JSON.parse(storedHistory) as any[]; // Parse as any first
-      initialChatHistory = parsedHistory.map(session => ({
-        ...session,
-        messages: session.messages.map((message: any) => ({
-          ...message,
-          timestamp: new Date(message.timestamp), // Convert string to Date
-        })),
-        createdAt: new Date(session.createdAt), // Convert string to Date
-        lastUpdated: new Date(session.lastUpdated), // Convert string to Date
-      }));
-      setChatHistory(initialChatHistory);
-      if (!activeChatId && initialChatHistory.length > 0) {
-        activeChatId = initialChatHistory[0].id;
-      }
+    if (!isLoadingAuth && !user) {
+      router.push('/auth/login');
     }
+  }, [user, isLoadingAuth, router]);
 
-    if (activeChatId) {
-      setCurrentChatId(activeChatId);
-      // Use initialChatHistory which has correct Date objects
-      const currentSession = initialChatHistory.find(s => s.id === activeChatId);
-      if (currentSession) {
-        setMessages(currentSession.messages);
-      } else if (initialChatHistory.length === 0) {
-        // This condition implies storedHistory was null or empty array
+  useEffect(() => {
+    if (user) {
+      const chatHistoryKey = getChatHistoryKey();
+      const currentChatIdKey = getCurrentChatIdKey();
+
+      if (!chatHistoryKey || !currentChatIdKey) return;
+
+      const storedHistory = localStorage.getItem(chatHistoryKey);
+      const storedChatId = localStorage.getItem(currentChatIdKey);
+      let activeChatId = storedChatId;
+      let initialChatHistory: ChatSession[] = [];
+
+      if (storedHistory) {
+        try {
+          const parsedHistory = JSON.parse(storedHistory) as any[];
+          initialChatHistory = parsedHistory.map(session => ({
+            ...session,
+            messages: session.messages.map((message: any) => ({
+              ...message,
+              timestamp: new Date(message.timestamp), 
+            })),
+            createdAt: new Date(session.createdAt),
+            lastUpdated: new Date(session.lastUpdated),
+          }));
+          setChatHistory(initialChatHistory);
+          if (!activeChatId && initialChatHistory.length > 0) {
+            activeChatId = initialChatHistory[0].id;
+          }
+        } catch (error) {
+          console.error("Error parsing chat history from localStorage", error);
+          localStorage.removeItem(chatHistoryKey); // Clear corrupted data
+        }
+      }
+
+      if (activeChatId) {
+        setCurrentChatId(activeChatId);
+        const currentSession = initialChatHistory.find(s => s.id === activeChatId);
+        if (currentSession) {
+          setMessages(currentSession.messages);
+        } else if (initialChatHistory.length === 0) {
+          startNewChat();
+        }
+      } else {
         startNewChat();
       }
-    } else {
-      startNewChat();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user, getChatHistoryKey, getCurrentChatIdKey]);
 
   useEffect(() => {
-    if (chatHistory.length > 0) {
-      localStorage.setItem(LOCAL_STORAGE_CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
-    } else {
-      const storedHistory = localStorage.getItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
-      if (storedHistory) {
-        localStorage.removeItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
+    const chatHistoryKey = getChatHistoryKey();
+    if (user && chatHistoryKey) {
+      if (chatHistory.length > 0) {
+        localStorage.setItem(chatHistoryKey, JSON.stringify(chatHistory));
+      } else {
+        const storedHistory = localStorage.getItem(chatHistoryKey);
+        if (storedHistory) {
+          localStorage.removeItem(chatHistoryKey);
+        }
       }
     }
-  }, [chatHistory]);
+  }, [chatHistory, user, getChatHistoryKey]);
   
   useEffect(() => {
-    if (currentChatId) {
-      localStorage.setItem(LOCAL_STORAGE_CURRENT_CHAT_ID_KEY, currentChatId);
-      const currentSession = chatHistory.find(s => s.id === currentChatId);
-      if (currentSession) {
-        setMessages(currentSession.messages);
+    const currentChatIdKey = getCurrentChatIdKey();
+    if (user && currentChatIdKey) {
+      if (currentChatId) {
+        localStorage.setItem(currentChatIdKey, currentChatId);
+        const currentSession = chatHistory.find(s => s.id === currentChatId);
+        if (currentSession) {
+          setMessages(currentSession.messages);
+        }
+      } else {
+         localStorage.removeItem(currentChatIdKey);
       }
-    } else {
-       localStorage.removeItem(LOCAL_STORAGE_CURRENT_CHAT_ID_KEY);
     }
-  }, [currentChatId, chatHistory]);
+  }, [currentChatId, chatHistory, user, getCurrentChatIdKey]);
 
 
   const addMessageToCurrentChat = (message: Omit<Message, 'id' | 'timestamp'>) => {
@@ -211,6 +242,7 @@ export default function HomePage() {
   }, [currentChatId, toast]);
 
   const startNewChat = () => {
+    if (!user) return; // Should not happen if route protection is working
     const newSessionId = uuidv4();
     const newSessionTitle = `Chat ${chatHistory.length + 1}`;
     const newSession: ChatSession = {
@@ -275,6 +307,14 @@ export default function HomePage() {
     setEditingSessionDetails(null);
   };
 
+  if (isLoadingAuth || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -287,6 +327,8 @@ export default function HomePage() {
         onStartEditChatSession={handleStartEditChatSession}
         onSaveChatSessionTitle={handleSaveChatSessionTitle}
         onCancelEditChatSession={handleCancelEditChatSession}
+        user={user}
+        onSignOut={signOut}
       />
       <div className="flex flex-col h-screen flex-1">
         <PageHeader />
@@ -311,4 +353,3 @@ export default function HomePage() {
     </SidebarProvider>
   );
 }
-    
