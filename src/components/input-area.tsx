@@ -110,7 +110,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
             </Button>
           </div>
         )}
-        <div className="flex items-center w-full gap-2 px-3 py-1.5 rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-background">
+        <div className="flex items-center w-full gap-2 px-3 py-1.5 rounded-lg border border-input bg-background">
           {/* Left Icons Group */}
           <div className="flex items-center gap-0.5">
             <Tooltip>
