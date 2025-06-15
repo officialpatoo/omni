@@ -35,6 +35,8 @@ export default function HomePage() {
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const { toast } = useToast();
 
+  const [editingSessionDetails, setEditingSessionDetails] = useState<{ id: string; currentTitle: string } | null>(null);
+
   useEffect(() => {
     const storedHistory = localStorage.getItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
     const storedChatId = localStorage.getItem(LOCAL_STORAGE_CURRENT_CHAT_ID_KEY);
@@ -66,10 +68,14 @@ export default function HomePage() {
     if (chatHistory.length > 0) {
       localStorage.setItem(LOCAL_STORAGE_CHAT_HISTORY_KEY, JSON.stringify(chatHistory));
     } else {
-      localStorage.removeItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
+      // If chat history becomes empty, remove it from localStorage
+      const storedHistory = localStorage.getItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
+      if (storedHistory) {
+        localStorage.removeItem(LOCAL_STORAGE_CHAT_HISTORY_KEY);
+      }
     }
   }, [chatHistory]);
-
+  
   useEffect(() => {
     if (currentChatId) {
       localStorage.setItem(LOCAL_STORAGE_CURRENT_CHAT_ID_KEY, currentChatId);
@@ -195,16 +201,20 @@ export default function HomePage() {
 
   const startNewChat = () => {
     const newSessionId = uuidv4();
+    const newSessionTitle = `Chat ${chatHistory.length + 1}`;
     const newSession: ChatSession = {
       id: newSessionId,
-      title: `Chat ${chatHistory.length + 1}`,
+      title: newSessionTitle,
       messages: [],
       createdAt: new Date(),
       lastUpdated: new Date(),
     };
-    setChatHistory((prev) => [newSession, ...prev]);
+    // Add to the beginning of the array so it appears at the top
+    setChatHistory((prev) => [newSession, ...prev.filter(s => s.id !== newSessionId)]);
     setCurrentChatId(newSessionId);
-    setMessages([]);
+    setMessages([]); // Clear messages for the new chat
+     // Automatically start editing the title of the new chat
+    setEditingSessionDetails({ id: newSessionId, currentTitle: newSessionTitle });
   };
 
   const selectChat = (id: string) => {
@@ -213,22 +223,49 @@ export default function HomePage() {
     if (selectedSession) {
       setMessages(selectedSession.messages);
     }
+    setEditingSessionDetails(null); // Cancel any ongoing edit when switching chats
   };
 
   const deleteChat = (id: string) => {
-    setChatHistory((prev) => prev.filter(s => s.id !== id));
-    if (currentChatId === id) {
-      if (chatHistory.length > 1) {
-        // Select the next available chat, or the first one if deleting the last one in a list with others
-        const remainingChats = chatHistory.filter(s => s.id !== id);
-        selectChat(remainingChats[0].id);
-      } else {
-        // If it was the last chat, start a new one
-        startNewChat();
+    setChatHistory((prev) => {
+      const updatedHistory = prev.filter(s => s.id !== id);
+      if (currentChatId === id) {
+        if (updatedHistory.length > 0) {
+          selectChat(updatedHistory[0].id);
+        } else {
+          startNewChat();
+        }
       }
+      return updatedHistory;
+    });
+     if (editingSessionDetails?.id === id) {
+      setEditingSessionDetails(null);
     }
   };
 
+  const handleStartEditChatSession = (id: string, currentTitle: string) => {
+    setEditingSessionDetails({ id, currentTitle });
+  };
+
+  const handleSaveChatSessionTitle = (id: string, newTitle: string) => {
+    if (!newTitle.trim()) {
+      toast({ title: "Invalid Title", description: "Chat title cannot be empty.", variant: "destructive" });
+      // Optionally, revert to old title or a default
+      const sessionToRevert = chatHistory.find(s => s.id === id);
+      setEditingSessionDetails({id, currentTitle: sessionToRevert?.title || `Chat ${id.substring(0,8)}` });
+      return;
+    }
+    setChatHistory(prev => 
+      prev.map(session => 
+        session.id === id ? { ...session, title: newTitle.trim(), lastUpdated: new Date() } : session
+      )
+    );
+    setEditingSessionDetails(null);
+  };
+
+  const handleCancelEditChatSession = () => {
+    setEditingSessionDetails(null);
+  };
 
   return (
     <SidebarProvider>
@@ -238,6 +275,10 @@ export default function HomePage() {
         onNewChat={startNewChat}
         onSelectChat={selectChat}
         onDeleteChat={deleteChat}
+        editingSessionDetails={editingSessionDetails}
+        onStartEditChatSession={handleStartEditChatSession}
+        onSaveChatSessionTitle={handleSaveChatSessionTitle}
+        onCancelEditChatSession={handleCancelEditChatSession}
       />
       <div className="flex flex-col h-screen flex-1">
         <PageHeader />
@@ -262,3 +303,5 @@ export default function HomePage() {
     </SidebarProvider>
   );
 }
+
+    
