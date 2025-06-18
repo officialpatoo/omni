@@ -13,10 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Edit3, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck } from 'lucide-react';
+import { UserCircle, Edit3, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck, Settings } from 'lucide-react'; // Added Settings here
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile, AppSettings } from '@/types';
-import { useTheme } from '@/hooks/use-theme'; // Import useTheme
+import { useTheme } from '@/hooks/use-theme'; 
 
 const LOCAL_STORAGE_PROFILE_KEY_PREFIX = 'patoovision_profile_';
 const LOCAL_STORAGE_APP_SETTINGS_KEY_PREFIX = 'patoovision_app_settings_';
@@ -25,7 +25,7 @@ export default function ProfilePage() {
   const { user, isLoading: isLoadingAuth } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [currentTheme, toggleTheme, setTheme] = useTheme();
+  const [_currentTheme, _toggleTheme, setThemeHook] = useTheme();
 
 
   const [profile, setProfile] = useState<UserProfile>({ displayName: '', bio: '' });
@@ -78,15 +78,15 @@ export default function ProfilePage() {
              htmlElement.classList.remove('light', 'dark');
              if (parsedSettings.theme === 'system') {
                 const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                setTheme(systemPrefersDark ? 'dark' : 'light');
+                setThemeHook(systemPrefersDark ? 'dark' : 'light');
              } else {
-                setTheme(parsedSettings.theme as 'light' | 'dark');
+                setThemeHook(parsedSettings.theme as 'light' | 'dark');
              }
           }
         }
       }
     }
-  }, [user, isLoadingAuth, setTheme]);
+  }, [user, isLoadingAuth, setThemeHook]);
 
   const handleProfileChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -116,9 +116,9 @@ export default function ProfilePage() {
           htmlElement.classList.remove('light', 'dark'); // Remove existing theme classes
           if (value === 'system') {
             const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            setTheme(systemPrefersDark ? 'dark' : 'light');
+            setThemeHook(systemPrefersDark ? 'dark' : 'light');
           } else {
-            setTheme(value as 'light' | 'dark');
+            setThemeHook(value as 'light' | 'dark');
           }
         }
       }
