@@ -13,10 +13,10 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Edit3, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck, Settings } from 'lucide-react'; // Added Settings here
+import { UserCircle, Edit3, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile, AppSettings } from '@/types';
-import { useTheme } from '@/hooks/use-theme'; 
+import { useTheme, type PreferredTheme } from '@/hooks/use-theme'; 
 
 const LOCAL_STORAGE_PROFILE_KEY_PREFIX = 'patoovision_profile_';
 const LOCAL_STORAGE_APP_SETTINGS_KEY_PREFIX = 'patoovision_app_settings_';
@@ -25,20 +25,20 @@ export default function ProfilePage() {
   const { user, isLoading: isLoadingAuth } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [_currentTheme, _toggleTheme, setThemeHook] = useTheme();
+  const [_activeTheme, setPreferredThemeGlobal, preferredThemeFromHook] = useTheme();
 
 
   const [profile, setProfile] = useState<UserProfile>({ displayName: '', bio: '' });
   const [appSettings, setAppSettings] = useState<AppSettings>({
     aiModel: 'googleai/gemini-2.0-flash',
-    theme: 'system',
+    theme: preferredThemeFromHook, // Initialize with theme from global hook
     notificationsEnabled: true,
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [_isSavingSettings, _setIsSavingSettings] = useState(false); // isSavingSettings not used, can be removed if not planned
 
-  const getProfileStorageKey = () => user ? `${LOCAL_STORAGE_PROFILE_KEY_PREFIX}${user.uid}` : null;
-  const getAppSettingsStorageKey = () => user ? `${LOCAL_STORAGE_APP_SETTINGS_KEY_PREFIX}${user.uid}` : null;
+  const getProfileStorageKey = React.useCallback(() => user ? `${LOCAL_STORAGE_PROFILE_KEY_PREFIX}${user.uid}` : null, [user]);
+  const getAppSettingsStorageKey = React.useCallback(() => user ? `${LOCAL_STORAGE_APP_SETTINGS_KEY_PREFIX}${user.uid}` : null, [user]);
 
   useEffect(() => {
     if (!isLoadingAuth && !user) {
@@ -48,45 +48,43 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (user) {
-      // Load profile from localStorage
       const profileKey = getProfileStorageKey();
       if (profileKey) {
         const storedProfile = localStorage.getItem(profileKey);
         if (storedProfile) {
           setProfile(JSON.parse(storedProfile));
         } else {
-          // Initialize with Firebase data if no local profile
           setProfile({
             displayName: user.displayName || '',
-            bio: '', // Bio is not in Firebase Auth by default
+            bio: '',
             photoURL: user.photoURL || '',
             email: user.email || ''
           });
         }
       }
       
-      // Load app settings from localStorage
       const settingsKey = getAppSettingsStorageKey();
       if (settingsKey) {
-        const storedSettings = localStorage.getItem(settingsKey);
-        if (storedSettings) {
-          const parsedSettings = JSON.parse(storedSettings) as AppSettings;
-          setAppSettings(parsedSettings);
-          // Sync theme with useTheme
-          if (parsedSettings.theme) {
-             const htmlElement = document.documentElement;
-             htmlElement.classList.remove('light', 'dark');
-             if (parsedSettings.theme === 'system') {
-                const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                setThemeHook(systemPrefersDark ? 'dark' : 'light');
-             } else {
-                setThemeHook(parsedSettings.theme as 'light' | 'dark');
-             }
-          }
+        const storedSettingsData = localStorage.getItem(settingsKey);
+        if (storedSettingsData) {
+          const parsedSettings = JSON.parse(storedSettingsData) as AppSettings;
+          const effectiveThemePreference = parsedSettings.theme || preferredThemeFromHook;
+          
+          setAppSettings({
+            ...appSettings, // keep defaults for other settings if not in parsedSettings
+            ...parsedSettings,
+            theme: effectiveThemePreference
+          });
+          
+          setPreferredThemeGlobal(effectiveThemePreference);
+        } else {
+          // No specific app settings stored, ensure local appSettings.theme matches hook's default
+           setAppSettings(prev => ({...prev, theme: preferredThemeFromHook }));
         }
       }
     }
-  }, [user, isLoadingAuth, setThemeHook]);
+  }, [user, isLoadingAuth, preferredThemeFromHook, setPreferredThemeGlobal, getAppSettingsStorageKey, getProfileStorageKey]);
+
 
   const handleProfileChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -96,9 +94,8 @@ export default function ProfilePage() {
     const profileKey = getProfileStorageKey();
     if (user && profileKey) {
       setIsSavingProfile(true);
-      // Here you would typically also update Firebase profile if desired, e.g., updateProfile(auth.currentUser, { displayName: profile.displayName })
       localStorage.setItem(profileKey, JSON.stringify(profile));
-      setTimeout(() => { // Simulate API call
+      setTimeout(() => { 
         setIsSavingProfile(false);
         toast({ title: "Profile Updated", description: "Your profile information has been saved." });
       }, 1000);
@@ -112,14 +109,7 @@ export default function ProfilePage() {
       if (user && settingsKey) {
         localStorage.setItem(settingsKey, JSON.stringify(newSettings));
         if (key === 'theme') {
-          const htmlElement = document.documentElement;
-          htmlElement.classList.remove('light', 'dark'); // Remove existing theme classes
-          if (value === 'system') {
-            const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            setThemeHook(systemPrefersDark ? 'dark' : 'light');
-          } else {
-            setThemeHook(value as 'light' | 'dark');
-          }
+          setPreferredThemeGlobal(value as PreferredTheme); 
         }
       }
       return newSettings;
@@ -142,7 +132,6 @@ export default function ProfilePage() {
       </header>
 
       <div className="space-y-8">
-        {/* Profile Information Card */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
@@ -162,7 +151,6 @@ export default function ProfilePage() {
               <div>
                 <p className="text-sm text-muted-foreground">Logged in as</p>
                 <p className="font-medium text-foreground">{user.email}</p>
-                 {/* Avatar upload could be added here later */}
               </div>
             </div>
 
@@ -200,7 +188,6 @@ export default function ProfilePage() {
 
         <Separator />
 
-        {/* Application Preferences Card */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
@@ -222,7 +209,6 @@ export default function ProfilePage() {
                 <SelectContent>
                   <SelectItem value="googleai/gemini-2.0-flash">Gemini 2.0 Flash (Default)</SelectItem>
                   <SelectItem value="googleai/gemini-pro">Gemini Pro</SelectItem>
-                  {/* Add other models as available */}
                 </SelectContent>
               </Select>
             </div>
@@ -231,7 +217,7 @@ export default function ProfilePage() {
               <Label htmlFor="theme" className="flex items-center"><Palette className="mr-2 h-4 w-4 text-muted-foreground" /> Theme</Label>
               <Select
                 value={appSettings.theme}
-                onValueChange={(value) => handleSettingsChange('theme', value)}
+                onValueChange={(value) => handleSettingsChange('theme', value as PreferredTheme)}
               >
                 <SelectTrigger id="theme" className="w-full sm:w-[280px]">
                   <SelectValue placeholder="Select Theme" />
@@ -253,17 +239,15 @@ export default function ProfilePage() {
               </div>
               <Switch
                 id="notificationsEnabled"
-                checked={appSettings.notificationsEnabled}
+                checked={!!appSettings.notificationsEnabled}
                 onCheckedChange={(checked) => handleSettingsChange('notificationsEnabled', checked)}
               />
             </div>
-             {/* Note: Saving app settings is handled by handleSettingsChange which directly updates localStorage */}
           </CardContent>
         </Card>
 
         <Separator />
         
-        {/* Subscription Management Card - Placeholder */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
@@ -285,7 +269,6 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Security Settings Card - Placeholder */}
          <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center text-xl">
@@ -299,8 +282,6 @@ export default function ProfilePage() {
             <p className="text-xs text-muted-foreground pt-2">Advanced security features are planned for future updates.</p>
           </CardContent>
         </Card>
-
-
       </div>
     </div>
   );
