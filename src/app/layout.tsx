@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AppProviders } from '@/components/app-providers';
 
 export const metadata: Metadata = {
-  title: 'PatooVision AI',
+  title: 'PATOOWORLD PA',
   description: 'AI-powered image analysis and content generation',
 };
 
