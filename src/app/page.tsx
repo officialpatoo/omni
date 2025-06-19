@@ -27,8 +27,8 @@ async function fileToDataUri(file: File): Promise<string> {
   });
 }
 
-const LOCAL_STORAGE_CHAT_HISTORY_KEY_PREFIX = 'patoovision_chat_history_';
-const LOCAL_STORAGE_CURRENT_CHAT_ID_KEY_PREFIX = 'patoovision_current_chat_id_';
+const LOCAL_STORAGE_CHAT_HISTORY_KEY_PREFIX = 'patooworld_chat_history_';
+const LOCAL_STORAGE_CURRENT_CHAT_ID_KEY_PREFIX = 'patooworld_current_chat_id_';
 
 export default function HomePage() {
   const { user, isLoading: isLoadingAuth, signOut } = useAuth();
@@ -92,6 +92,8 @@ export default function HomePage() {
         if (currentSession) {
           setMessages(currentSession.messages);
         } else if (initialChatHistory.length === 0) {
+          // If activeChatId exists but not in history (e.g., history cleared elsewhere)
+          // or if history is empty, start a new chat.
           startNewChat();
         }
       } else {
@@ -107,6 +109,7 @@ export default function HomePage() {
       if (chatHistory.length > 0) {
         localStorage.setItem(chatHistoryKey, JSON.stringify(chatHistory));
       } else {
+        // If chat history is empty, ensure it's removed from localStorage
         const storedHistory = localStorage.getItem(chatHistoryKey);
         if (storedHistory) {
           localStorage.removeItem(chatHistoryKey);
@@ -139,7 +142,7 @@ export default function HomePage() {
         session.id === currentChatId
           ? { ...session, messages: [...session.messages, newMessage], lastUpdated: new Date() }
           : session
-      )
+      ).sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
     );
   };
 
@@ -159,7 +162,7 @@ export default function HomePage() {
           return { ...session, messages: updatedMessages, lastUpdated: new Date() };
         }
         return session;
-      })
+      }).sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
     );
   };
 
@@ -194,7 +197,7 @@ export default function HomePage() {
         const aiResponse = await analyzeImageQuery({ photoDataUri: imageUrl, query: text || "Describe this image." });
         aiResponseText = aiResponse.answer;
       } else {
-        const aiResponse = await generateContentFromQuery({ query: text });
+        const aiResponse = await generateContentFromQuery({ query: text }); // Non-streaming
         aiResponseText = aiResponse.content;
       }
       updateLastMessageInCurrentChat({ text: aiResponseText, isLoading: false });
@@ -242,9 +245,9 @@ export default function HomePage() {
   }, [currentChatId, toast]);
 
   const startNewChat = () => {
-    if (!user) return; // Should not happen if route protection is working
+    if (!user) return; 
     const newSessionId = uuidv4();
-    const newSessionTitle = `Chat ${chatHistory.length + 1}`;
+    const newSessionTitle = `Chat ${chatHistory.length + 1}`; // Initial temporary title
     const newSession: ChatSession = {
       id: newSessionId,
       title: newSessionTitle,
@@ -252,7 +255,11 @@ export default function HomePage() {
       createdAt: new Date(),
       lastUpdated: new Date(),
     };
-    setChatHistory((prev) => [newSession, ...prev.filter(s => s.id !== newSessionId)]);
+    
+    setChatHistory((prev) => 
+      [newSession, ...prev.filter(s => s.id !== newSessionId)]
+      .sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
+    );
     setCurrentChatId(newSessionId);
     setMessages([]); 
     setEditingSessionDetails({ id: newSessionId, currentTitle: newSessionTitle });
@@ -272,7 +279,9 @@ export default function HomePage() {
       const updatedHistory = prev.filter(s => s.id !== id);
       if (currentChatId === id) {
         if (updatedHistory.length > 0) {
-          selectChat(updatedHistory[0].id);
+          // Select the most recently updated chat after deletion
+          const sortedHistory = [...updatedHistory].sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+          selectChat(sortedHistory[0].id);
         } else {
           startNewChat();
         }
@@ -298,7 +307,7 @@ export default function HomePage() {
     setChatHistory(prev => 
       prev.map(session => 
         session.id === id ? { ...session, title: newTitle.trim(), lastUpdated: new Date() } : session
-      )
+      ).sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
     );
     setEditingSessionDetails(null);
   };
