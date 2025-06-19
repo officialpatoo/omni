@@ -1,20 +1,20 @@
-// IMPORTANT: REMOVE THE LINE BELOW AFTER YOUR EDITS
-// AI-EDIT-WARNING: Please review and update the SVG path data if the P shape is not as expected.
 
 export function Logo() {
   return (
     <div className="flex items-center gap-2">
       <svg
-        className="h-8 w-8 text-primary"
+        className="h-8 w-8"
         viewBox="0 0 100 100"
-        fill="currentColor"
         xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
       >
         <path
-          fillRule="evenodd"
-          clipRule="evenodd"
-          d="M25 15 H45 V35 C68 35 80 45 80 60 C80 75 68 85 45 85 H25 V15 Z M45 50 H55 C62.5 50 65 54 65 60 C65 66 62.5 70 55 70 H45 V50 Z"
+          d="M15 95 Q5 95 5 80 V20 Q5 5 20 5 H55 Q85 5 92 25 Q100 45 92 65 Q85 85 55 85 H45 V95 H15Z"
+          fill="#FFF352"
+        />
+        <path
+          d="M30 75 V25 H47 C57.464 25 65 32.536 65 42.5 C65 52.464 57.464 60 47 60 H30 Z M42 35 V50 H47 C52.18 50 55 47.657 55 42.5 C55 37.343 52.18 35 47 35 H42 Z"
+          fill="#1A1A1A"
         />
       </svg>
       <h1 className="text-2xl font-headline font-semibold text-foreground">PATOOWORLD PA</h1>
