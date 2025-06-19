@@ -6,12 +6,12 @@ export function Logo() {
       <Image 
         src="/logo.png" 
         alt="" 
-        width={34} 
+        width={30} 
         height={34} 
-        className="h-8 w-8"
+        className="h-10w-10"
         data-ai-hint="site logo" 
       />
-      <h1 className="text-2xl font-headline font-semibold text-foreground">O M N I</h1>
+      <h1 className="text-2xl font-headline font-semibold text-foreground">M N I</h1>
     </div>
   );
 }
