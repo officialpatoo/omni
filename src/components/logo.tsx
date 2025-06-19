@@ -11,7 +11,7 @@ export function Logo() {
         className="h-8 w-8"
         data-ai-hint="site logo" 
       />
-      <h1 className="text-2xl font-headline font-semibold text-foreground">PATOOWORLD PA</h1>
+      <h1 className="text-2xl font-headline font-semibold text-foreground">O M N I</h1>
     </div>
   );
 }
