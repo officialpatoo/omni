@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Logo } from '@/components/logo';
-import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar'; // Added useSidebar
+import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,16 +20,23 @@ import { UserCircle, LogIn, UserPlus, LogOut, Settings, Loader2 } from 'lucide-r
 
 export function PageHeader() {
   const { user, isLoading, signOut } = useAuth();
-  const { isMobile, state: sidebarState } = useSidebar(); // Get sidebar state
+  const { isMobile, state: sidebarState } = useSidebar();
 
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 shadow-sm sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
-      <div className="flex items-center gap-2">
+      {/* Left items container */}
+      <div className="flex items-center">
         {user && <SidebarTrigger className="h-8 w-8" />}
-        {/* Conditionally render Logo */}
+      </div>
+
+      {/* Center items container (for Logo) */}
+      <div className="flex-1 flex justify-center">
+        {/* Logo is visible on mobile OR when sidebar is collapsed on desktop */}
         {(isMobile || sidebarState === 'collapsed') && <Logo />}
       </div>
-      <div className="ml-auto flex items-center gap-2">
+
+      {/* Right items container */}
+      <div className="flex items-center gap-2">
         <ThemeToggle />
         {isLoading ? (
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

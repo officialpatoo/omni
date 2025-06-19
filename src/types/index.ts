@@ -35,3 +35,11 @@ export interface AppSettings {
   theme?: 'light' | 'dark' | 'system';
   notificationsEnabled?: boolean;
 }
+
+// Represents the input to the content generation flow
+export interface GenerateContentInput {
+  query: string;
+}
+
+// Represents each chunk of content yielded by the streaming flow
+export type GenerateContentOutput = string;

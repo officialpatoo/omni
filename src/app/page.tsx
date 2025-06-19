@@ -82,7 +82,7 @@ export default function HomePage() {
           }
         } catch (error) {
           console.error("Error parsing chat history from localStorage", error);
-          localStorage.removeItem(chatHistoryKey); // Clear corrupted data
+          localStorage.removeItem(chatHistoryKey); 
         }
       }
 
@@ -92,8 +92,6 @@ export default function HomePage() {
         if (currentSession) {
           setMessages(currentSession.messages);
         } else if (initialChatHistory.length === 0) {
-          // If activeChatId exists but not in history (e.g., history cleared elsewhere)
-          // or if history is empty, start a new chat.
           startNewChat();
         }
       } else {
@@ -109,7 +107,6 @@ export default function HomePage() {
       if (chatHistory.length > 0) {
         localStorage.setItem(chatHistoryKey, JSON.stringify(chatHistory));
       } else {
-        // If chat history is empty, ensure it's removed from localStorage
         const storedHistory = localStorage.getItem(chatHistoryKey);
         if (storedHistory) {
           localStorage.removeItem(chatHistoryKey);
@@ -134,8 +131,9 @@ export default function HomePage() {
   }, [currentChatId, chatHistory, user, getCurrentChatIdKey]);
 
 
-  const addMessageToCurrentChat = (message: Omit<Message, 'id' | 'timestamp'>) => {
-    const newMessage: Message = { ...message, id: uuidv4(), timestamp: new Date() };
+  const addMessageToCurrentChat = (message: Omit<Message, 'id' | 'timestamp'>): string => {
+    const newMessageId = uuidv4();
+    const newMessage: Message = { ...message, id: newMessageId, timestamp: new Date() };
     setMessages((prev) => [...prev, newMessage]);
     setChatHistory((prevHistory) =>
       prevHistory.map((session) =>
@@ -144,27 +142,28 @@ export default function HomePage() {
           : session
       ).sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
     );
+    return newMessageId;
   };
 
-  const updateLastMessageInCurrentChat = (update: Partial<Message>) => {
-    setMessages((prev) => {
-      const newMessages = [...prev];
-      if (newMessages.length > 0) {
-        newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], ...update };
-      }
-      return newMessages;
-    });
+  const updateMessageInCurrentChat = (messageId: string, update: Partial<Message>) => {
+    setMessages((prevMessages) =>
+      prevMessages.map((msg) =>
+        msg.id === messageId ? { ...msg, ...update } : msg
+      )
+    );
     setChatHistory((prevHistory) =>
       prevHistory.map((session) => {
-        if (session.id === currentChatId && session.messages.length > 0) {
-          const updatedMessages = [...session.messages];
-          updatedMessages[updatedMessages.length - 1] = { ...updatedMessages[updatedMessages.length - 1], ...update };
+        if (session.id === currentChatId) {
+          const updatedMessages = session.messages.map((msg) =>
+            msg.id === messageId ? { ...msg, ...update } : msg
+          );
           return { ...session, messages: updatedMessages, lastUpdated: new Date() };
         }
         return session;
       }).sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
     );
   };
+
 
   const handleSendMessage = useCallback(async (text: string, imageFile?: File) => {
     if (!currentChatId) {
@@ -189,25 +188,30 @@ export default function HomePage() {
       addMessageToCurrentChat({ role: 'user', text: userMessageText });
     }
     
-    addMessageToCurrentChat({ role: 'assistant', text: '', isLoading: true });
+    const assistantMessageId = addMessageToCurrentChat({ role: 'assistant', text: '', isLoading: true });
+    let accumulatedText = "";
 
     try {
-      let aiResponseText: string;
-      if (imageUrl) {
+      if (imageUrl) { // Image analysis, non-streaming for now
         const aiResponse = await analyzeImageQuery({ photoDataUri: imageUrl, query: text || "Describe this image." });
-        aiResponseText = aiResponse.answer;
-      } else {
-        const aiResponse = await generateContentFromQuery({ query: text }); // Non-streaming
-        aiResponseText = aiResponse.content;
+        updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.answer, isLoading: false });
+      } else { // Text generation, streaming
+        const stream = generateContentFromQuery({ query: text });
+        for await (const chunk of stream) {
+          if (typeof chunk === 'string') {
+            accumulatedText += chunk;
+            updateMessageInCurrentChat(assistantMessageId, { text: accumulatedText, isLoading: true });
+          }
+        }
+        updateMessageInCurrentChat(assistantMessageId, { text: accumulatedText, isLoading: false });
       }
-      updateLastMessageInCurrentChat({ text: aiResponseText, isLoading: false });
     } catch (error) {
       console.error('AI Error:', error);
       let errorMessage = "Sorry, something went wrong.";
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-      updateLastMessageInCurrentChat({ text: '', error: errorMessage, isLoading: false });
+      updateMessageInCurrentChat(assistantMessageId, { text: accumulatedText, error: errorMessage, isLoading: false });
       toast({ title: "AI Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsAiLoading(false);
@@ -224,19 +228,19 @@ export default function HomePage() {
     setIsAiLoading(true);
 
     addMessageToCurrentChat({ role: 'user', text: "Image captured from camera", imageUrl: imageDataUri });
-    addMessageToCurrentChat({ role: 'assistant', text: '', isLoading: true });
+    const assistantMessageId = addMessageToCurrentChat({ role: 'assistant', text: '', isLoading: true });
 
     try {
       const queryText = "What do you see in this image?"; 
       const aiResponse = await analyzeImageQuery({ photoDataUri: imageDataUri, query: queryText });
-      updateLastMessageInCurrentChat({ text: aiResponse.answer, isLoading: false });
+      updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.answer, isLoading: false });
     } catch (error) {
       console.error('AI Camera Error:', error);
       let errorMessage = "Sorry, something went wrong with camera image analysis.";
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-      updateLastMessageInCurrentChat({ text: '', error: errorMessage, isLoading: false });
+      updateMessageInCurrentChat(assistantMessageId, { text: '', error: errorMessage, isLoading: false });
       toast({ title: "AI Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsAiLoading(false);
@@ -247,7 +251,7 @@ export default function HomePage() {
   const startNewChat = () => {
     if (!user) return; 
     const newSessionId = uuidv4();
-    const newSessionTitle = `Chat ${chatHistory.length + 1}`; // Initial temporary title
+    const newSessionTitle = `Chat ${chatHistory.length + 1}`; 
     const newSession: ChatSession = {
       id: newSessionId,
       title: newSessionTitle,
@@ -279,7 +283,6 @@ export default function HomePage() {
       const updatedHistory = prev.filter(s => s.id !== id);
       if (currentChatId === id) {
         if (updatedHistory.length > 0) {
-          // Select the most recently updated chat after deletion
           const sortedHistory = [...updatedHistory].sort((a,b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
           selectChat(sortedHistory[0].id);
         } else {
