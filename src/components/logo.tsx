@@ -4,10 +4,10 @@ export function Logo() {
   return (
     <div className="flex items-center gap-2">
       <Image 
-        src="/logo.svg" 
-        alt="PATOOWORLD PA Logo" 
-        width={32} 
-        height={32} 
+        src="/logo.png" 
+        alt="" 
+        width={34} 
+        height={34} 
         className="h-8 w-8"
         data-ai-hint="site logo" 
       />
