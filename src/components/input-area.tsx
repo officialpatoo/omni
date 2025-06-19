@@ -159,7 +159,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={isListening ? "Listening..." : "Message..."}
+            placeholder={isListening ? "Listening..." : "Ask Omni..."}
             className="flex-1 resize-none bg-transparent border-0 focus:ring-0 p-0 self-center min-h-[24px] max-h-[120px] text-sm"
             rows={1}
             onKeyDown={(e) => {
