@@ -41,5 +41,7 @@ export interface GenerateContentInput {
   query: string;
 }
 
-// Represents each chunk of content yielded by the streaming flow
-export type GenerateContentOutput = string;
+// Represents the output of the content generation flow (no longer streaming)
+export interface GenerateContentOutput {
+  content: string;
+}

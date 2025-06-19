@@ -189,21 +189,14 @@ export default function HomePage() {
     }
     
     const assistantMessageId = addMessageToCurrentChat({ role: 'assistant', text: '', isLoading: true });
-    let accumulatedText = "";
-
+    
     try {
-      if (imageUrl) { // Image analysis, non-streaming for now
+      if (imageUrl) { // Image analysis
         const aiResponse = await analyzeImageQuery({ photoDataUri: imageUrl, query: text || "Describe this image." });
         updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.answer, isLoading: false });
-      } else { // Text generation, streaming
-        const streamResult = generateContentFromQuery({ query: text });
-        for await (const chunk of streamResult) {
-          if (typeof chunk === 'string') {
-            accumulatedText += chunk;
-            updateMessageInCurrentChat(assistantMessageId, { text: accumulatedText, isLoading: true });
-          }
-        }
-        updateMessageInCurrentChat(assistantMessageId, { text: accumulatedText, isLoading: false });
+      } else { // Text generation
+        const aiResponse = await generateContentFromQuery({ query: text });
+        updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.content, isLoading: false });
       }
     } catch (error) {
       console.error('AI Error:', error);
@@ -211,8 +204,7 @@ export default function HomePage() {
       if (error instanceof Error) {
         errorMessage = error.message;
       }
-      // Make sure to pass the accumulatedText even if an error occurs during streaming
-      updateMessageInCurrentChat(assistantMessageId, { text: accumulatedText, error: errorMessage, isLoading: false });
+      updateMessageInCurrentChat(assistantMessageId, { text: '', error: errorMessage, isLoading: false });
       toast({ title: "AI Error", description: errorMessage, variant: "destructive" });
     } finally {
       setIsAiLoading(false);
