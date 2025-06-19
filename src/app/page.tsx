@@ -196,8 +196,8 @@ export default function HomePage() {
         const aiResponse = await analyzeImageQuery({ photoDataUri: imageUrl, query: text || "Describe this image." });
         updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.answer, isLoading: false });
       } else { // Text generation, streaming
-        const stream = generateContentFromQuery({ query: text });
-        for await (const chunk of stream) {
+        const streamResult = generateContentFromQuery({ query: text });
+        for await (const chunk of streamResult) {
           if (typeof chunk === 'string') {
             accumulatedText += chunk;
             updateMessageInCurrentChat(assistantMessageId, { text: accumulatedText, isLoading: true });
@@ -211,6 +211,7 @@ export default function HomePage() {
       if (error instanceof Error) {
         errorMessage = error.message;
       }
+      // Make sure to pass the accumulatedText even if an error occurs during streaming
       updateMessageInCurrentChat(assistantMessageId, { text: accumulatedText, error: errorMessage, isLoading: false });
       toast({ title: "AI Error", description: errorMessage, variant: "destructive" });
     } finally {
