@@ -34,7 +34,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useAuth } from '@/contexts/auth-context'; // Import useAuth
+import { useAuth } from '@/contexts/auth-context';
+import { useSidebar } from '@/components/ui/sidebar';
 
 interface AppSidebarProps {
   chatHistory: ChatSession[];
@@ -46,8 +47,8 @@ interface AppSidebarProps {
   onStartEditChatSession: (id: string, currentTitle: string) => void;
   onSaveChatSessionTitle: (id: string, newTitle: string) => void;
   onCancelEditChatSession: () => void;
-  user: User | null; // Add user prop
-  onSignOut: () => void; // Add onSignOut prop
+  user: User | null;
+  onSignOut: () => void;
 }
 
 export function AppSidebar({
@@ -66,6 +67,7 @@ export function AppSidebar({
   const pathname = usePathname();
   const [editedTitle, setEditedTitle] = useState('');
   const { isLoading: isLoadingAuth } = useAuth();
+  const { isMobile } = useSidebar(); // Get isMobile state
 
   useEffect(() => {
     if (editingSessionDetails) {
@@ -86,9 +88,12 @@ export function AppSidebar({
   return (
     <Sidebar className="border-r" collapsible="icon">
       <SidebarHeader className="p-4">
-        <Link href="/">
-          <Logo />
-        </Link>
+        {/* Show logo in sidebar header only on mobile */}
+        {isMobile && (
+          <Link href="/">
+            <Logo />
+          </Link>
+        )}
       </SidebarHeader>
       <SidebarContent className="p-0">
         {user && (
@@ -109,7 +114,7 @@ export function AppSidebar({
             <SidebarGroupLabel className="flex items-center">
               <MessageSquare /> Chat History
             </SidebarGroupLabel>
-            <ScrollArea className="h-[calc(100vh_-_18rem)]"> {/* Adjusted height for auth section */}
+            <ScrollArea className="h-[calc(100vh_-_18rem)]"> 
               <SidebarMenu>
                 {chatHistory.map((session) => (
                   <SidebarMenuItem key={session.id} className="relative group/menu-item">
