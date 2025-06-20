@@ -26,7 +26,7 @@ export function ChatInterface({ messages }: ChatInterfaceProps) {
       <div ref={viewportRef} className="h-full">
       {messages.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-full text-center">
-            <Logo />
+            <Logo width={200} height={200} priority />
         </div>
       ) : (
         messages.map((msg) => <ChatMessageItem key={msg.id} message={msg} />)

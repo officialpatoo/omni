@@ -5,8 +5,9 @@ import { Message } from '@/types';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Copy, Share2, Loader2 } from 'lucide-react';
+import { User, Copy, Share2, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { Logo } from '@/components/logo';
 
 interface ChatMessageItemProps {
   message: Message;
@@ -35,11 +36,7 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
   return (
     <div className={cn("flex items-start gap-3 py-4", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
-        <Avatar className="h-8 w-8 shrink-0">
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            <Bot className="h-5 w-5" />
-          </AvatarFallback>
-        </Avatar>
+        <Logo fill className="h-8 w-8 shrink-0" />
       )}
       <div
         className={cn(
