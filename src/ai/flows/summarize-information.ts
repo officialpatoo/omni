@@ -8,8 +8,10 @@
  * - SummarizeInformationOutput - The return type for the summarizeInformation function.
  */
 
-import {ai} from '@/ai/genkit';
+import {getAi} from '@/ai/genkit';
 import {z} from 'genkit';
+
+const ai = getAi();
 
 const SummarizeInformationInputSchema = z.object({
   text: z.string().describe('The text to summarize.'),

@@ -8,8 +8,10 @@
  * - AnalyzeImageQueryOutput - The return type for the analyzeImageQuery function.
  */
 
-import {ai} from '@/ai/genkit';
+import {getAi} from '@/ai/genkit';
 import {z} from 'genkit';
+
+const ai = getAi();
 
 const AnalyzeImageQueryInputSchema = z.object({
   photoDataUri: z

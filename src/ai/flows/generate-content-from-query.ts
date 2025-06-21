@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Generates creative content from a user query.
@@ -8,8 +7,10 @@
  * - GenerateContentOutput - The type for the returned content object.
  */
 
-import {ai} from '@/ai/genkit';
+import {getAi} from '@/ai/genkit';
 import {z} from 'genkit';
+
+const ai = getAi();
 
 const GenerateContentInputSchema = z.object({
   query: z.string().describe('The query to generate content from.'),
@@ -17,16 +18,16 @@ const GenerateContentInputSchema = z.object({
 export type GenerateContentInput = z.infer<typeof GenerateContentInputSchema>;
 
 const GenerateContentOutputSchema = z.object({
-  content: z.string().describe('The generated content.'),
+  content: z.string().describe('An original, AI-generated response to the query.'),
 });
 export type GenerateContentOutput = z.infer<typeof GenerateContentOutputSchema>;
 
 // Define the prompt at the module's top level
 const contentPrompt = ai.definePrompt({
-  name: 'contentGenerationPrompt', // Renamed for clarity, was contentGenerationStreamingPrompt
+  name: 'contentGenerationPrompt',
   input: {schema: GenerateContentInputSchema},
   output: {schema: GenerateContentOutputSchema}, 
-  prompt: `You are a creative content generator. Generate content based on the following query:\n\nQuery: {{{query}}}`,
+  prompt: `You are a helpful and creative AI assistant. Your task is to provide a comprehensive and original answer to the user's query. Do not simply repeat the query. Generate content based on the following:\n\nQuery: {{{query}}}`,
 });
 
 // This is the main exported function that page.tsx calls
