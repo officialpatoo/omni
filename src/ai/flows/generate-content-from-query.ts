@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates creative content from a user query.
@@ -10,8 +11,6 @@
 import {getAi} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const ai = getAi();
-
 const GenerateContentInputSchema = z.object({
   query: z.string().describe('The query to generate content from.'),
 });
@@ -22,18 +21,20 @@ const GenerateContentOutputSchema = z.object({
 });
 export type GenerateContentOutput = z.infer<typeof GenerateContentOutputSchema>;
 
-// Define the prompt at the module's top level
-const contentPrompt = ai.definePrompt({
-  name: 'contentGenerationPrompt',
-  input: {schema: GenerateContentInputSchema},
-  output: {schema: GenerateContentOutputSchema}, 
-  prompt: `You are a helpful and creative AI assistant. Your task is to provide a comprehensive and original answer to the user's query. Do not simply repeat the query. Generate content based on the following:\n\nQuery: {{{query}}}`,
-});
-
 // This is the main exported function that page.tsx calls
 export async function generateContentFromQuery(
   input: GenerateContentInput
 ): Promise<GenerateContentOutput> {
+  const ai = getAi();
+
+  // Define the prompt inside the function to defer AI initialization.
+  const contentPrompt = ai.definePrompt({
+    name: 'contentGenerationPrompt',
+    input: {schema: GenerateContentInputSchema},
+    output: {schema: GenerateContentOutputSchema}, 
+    prompt: `You are a helpful and creative AI assistant. Your task is to provide a comprehensive and original answer to the user's query. Do not simply repeat the query. Generate content based on the following:\n\nQuery: {{{query}}}`,
+  });
+
   console.log('[generateContentFromQuery] Flow started with input:', input);
 
   try {

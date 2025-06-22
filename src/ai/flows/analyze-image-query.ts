@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -10,8 +11,6 @@
 
 import {getAi} from '@/ai/genkit';
 import {z} from 'genkit';
-
-const ai = getAi();
 
 const AnalyzeImageQueryInputSchema = z.object({
   photoDataUri: z
@@ -29,24 +28,26 @@ const AnalyzeImageQueryOutputSchema = z.object({
 export type AnalyzeImageQueryOutput = z.infer<typeof AnalyzeImageQueryOutputSchema>;
 
 export async function analyzeImageQuery(input: AnalyzeImageQueryInput): Promise<AnalyzeImageQueryOutput> {
+  const ai = getAi();
+
+  const prompt = ai.definePrompt({
+    name: 'analyzeImageQueryPrompt',
+    input: {schema: AnalyzeImageQueryInputSchema},
+    output: {schema: AnalyzeImageQueryOutputSchema},
+    prompt: `You are an AI that analyzes images and answers questions about them.\n\nHere is the image:\n{{media url=photoDataUri}}\n\nHere is the question:\n{{{query}}}\n\nAnswer the question based on the image content.`,
+  });
+
+  const analyzeImageQueryFlow = ai.defineFlow(
+    {
+      name: 'analyzeImageQueryFlow',
+      inputSchema: AnalyzeImageQueryInputSchema,
+      outputSchema: AnalyzeImageQueryOutputSchema,
+    },
+    async (flowInput) => {
+      const {output} = await prompt(flowInput);
+      return output!;
+    }
+  );
+  
   return analyzeImageQueryFlow(input);
 }
-
-const prompt = ai.definePrompt({
-  name: 'analyzeImageQueryPrompt',
-  input: {schema: AnalyzeImageQueryInputSchema},
-  output: {schema: AnalyzeImageQueryOutputSchema},
-  prompt: `You are an AI that analyzes images and answers questions about them.\n\nHere is the image:\n{{media url=photoDataUri}}\n\nHere is the question:\n{{{query}}}\n\nAnswer the question based on the image content.`,
-});
-
-const analyzeImageQueryFlow = ai.defineFlow(
-  {
-    name: 'analyzeImageQueryFlow',
-    inputSchema: AnalyzeImageQueryInputSchema,
-    outputSchema: AnalyzeImageQueryOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
