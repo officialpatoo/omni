@@ -7,6 +7,7 @@
   packages = [
     pkgs.nodejs_20
     pkgs.zulu
+    pkgs.bun
   ];
   # Sets environment variables in the workspace
   env = {};
@@ -14,7 +15,7 @@
   # a firebase.json file is written into the user's directory
   services.firebase.emulators = {
     detect = true;
-    projectId = "demo-app";
+    projectId = "patooworld-omniai";
     services = ["auth" "firestore"];
   };
   idx = {

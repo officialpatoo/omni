@@ -4,7 +4,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Message, ChatSession } from '@/types';
 import { analyzeImageQuery } from '@/ai/flows/analyze-image-query';
-import { generateContentFromQuery } from '@/ai/flows/generate-content-from-query';
+import { invokeOmniChatFlow } from '@/ai/flows/OmniChatFlow';
 
 import { ChatInterface } from '@/components/chat-interface';
 import { InputArea } from '@/components/input-area';
@@ -195,8 +195,8 @@ export default function HomePage() {
         const aiResponse = await analyzeImageQuery({ photoDataUri: imageUrl, query: text || "Describe this image." });
         updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.answer, isLoading: false });
       } else { // Text generation
-        const aiResponse = await generateContentFromQuery({ query: text });
-        updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.content, isLoading: false });
+        const aiResponse = await invokeOmniChatFlow({ prompt: text });
+        updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.responseText, isLoading: false });
       }
     } catch (error) {
       console.error('AI Error:', error);
