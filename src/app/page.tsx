@@ -5,6 +5,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import type { Message, ChatSession } from '@/types';
 import { analyzeImageQuery } from '@/ai/flows/analyze-image-query';
 import { invokeOmniChatFlow } from '@/ai/flows/OmniChatFlow';
+import { generateImage } from '@/ai/flows/generate-image';
 
 import { ChatInterface } from '@/components/chat-interface';
 import { InputArea } from '@/components/input-area';
@@ -194,6 +195,25 @@ export default function HomePage() {
       if (imageUrl) { // Image analysis
         const aiResponse = await analyzeImageQuery({ photoDataUri: imageUrl, query: text || "Describe this image." });
         updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.answer, isLoading: false });
+      } else if (text.toLowerCase().startsWith('/imagine ')) { // Image Generation
+        const imagePrompt = text.substring('/imagine '.length).trim();
+        if (!imagePrompt) {
+            updateMessageInCurrentChat(assistantMessageId, { 
+                text: 'Please provide a description for the image you want to generate. Usage: /imagine a cat wearing a hat', 
+                error: "Empty prompt.", 
+                isLoading: false 
+            });
+            setIsAiLoading(false);
+            return;
+        }
+        updateMessageInCurrentChat(assistantMessageId, { text: `Generating an image of: "${imagePrompt}"...`, isLoading: true });
+        const aiResponse = await generateImage({ prompt: imagePrompt });
+        updateMessageInCurrentChat(assistantMessageId, {
+            text: `Here's your image of "${imagePrompt}":`,
+            imageUrl: aiResponse.imageDataUri,
+            isLoading: false,
+        });
+
       } else { // Text generation
         const aiResponse = await invokeOmniChatFlow({ prompt: text });
         updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.responseText, isLoading: false });
