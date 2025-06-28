@@ -36,6 +36,8 @@ export interface AppSettings {
   notificationsEnabled?: boolean;
 }
 
+export type AiAction = 'rephrase' | 'translate' | 'expand';
+
 // Represents the input to the content generation flow
 export interface GenerateContentInput {
   query: string;

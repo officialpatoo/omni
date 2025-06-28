@@ -3,10 +3,13 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import type { Message, ChatSession } from '@/types';
+import type { Message, ChatSession, AiAction } from '@/types';
 import { analyzeImageQuery } from '@/ai/flows/analyze-image-query';
 import { invokeOmniChatFlow } from '@/ai/flows/OmniChatFlow';
 import { generateImage } from '@/ai/flows/generate-image';
+import { rephraseText } from '@/ai/flows/rephrase-text';
+import { translateText } from '@/ai/flows/translate-text';
+import { expandIdea } from '@/ai/flows/expand-idea';
 
 import { ChatInterface } from '@/components/chat-interface';
 import { InputArea } from '@/components/input-area';
@@ -262,6 +265,52 @@ export default function HomePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentChatId, toast]);
 
+  const handleAiAction = useCallback(async (messageId: string, action: AiAction, context: any) => {
+    if (isAiLoading) {
+      toast({ title: "AI is busy", description: "Please wait for the current response to finish.", variant: "default" });
+      return;
+    }
+    const originalMessage = messages.find(m => m.id === messageId);
+    if (!originalMessage) {
+      toast({ title: "Error", description: "Original message not found.", variant: "destructive" });
+      return;
+    }
+    
+    setIsAiLoading(true);
+    const assistantMessageId = addMessageToCurrentChat({ role: 'assistant', text: '', isLoading: true });
+
+    try {
+      let aiResponseText = '';
+      switch (action) {
+        case 'rephrase':
+          const rephraseResult = await rephraseText({ text: originalMessage.text, style: context.style });
+          aiResponseText = `**Rephrased (${context.style}):**\n\n${rephraseResult.rephrasedText}`;
+          break;
+        case 'translate':
+          const translateResult = await translateText({ text: originalMessage.text, language: context.language });
+          aiResponseText = `**Translated (Spanish):**\n\n${translateResult.translatedText}`;
+          break;
+        case 'expand':
+          const expandResult = await expandIdea({ text: originalMessage.text });
+          aiResponseText = `**Expanded Idea:**\n\n${expandResult.expandedText}`;
+          break;
+      }
+      updateMessageInCurrentChat(assistantMessageId, { text: aiResponseText, isLoading: false });
+    } catch (error) {
+       console.error(`AI Action Error (${action}):`, error);
+      let errorMessage = "Sorry, something went wrong with that action.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      updateMessageInCurrentChat(assistantMessageId, { text: '', error: errorMessage, isLoading: false });
+      toast({ title: "AI Error", description: errorMessage, variant: "destructive" });
+    } finally {
+      setIsAiLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAiLoading, messages, toast]);
+
+
   const startNewChat = () => {
     if (!user) return; 
     const newSessionId = uuidv4();
@@ -359,7 +408,7 @@ export default function HomePage() {
       <div className="flex flex-col h-screen flex-1">
         <PageHeader />
         <main className="flex-1 flex flex-col overflow-hidden bg-background">
-          <ChatInterface messages={messages} />
+          <ChatInterface messages={messages} onAction={handleAiAction} />
         </main>
         <div className="flex justify-center bg-background">
             <div className="w-full max-w-2xl px-2 pb-2">

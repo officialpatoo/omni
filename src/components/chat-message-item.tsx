@@ -1,11 +1,17 @@
 "use client";
 
 import Image from 'next/image';
-import { Message } from '@/types';
+import { Message, AiAction } from '@/types';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { User, Copy, Share2, Loader2 } from 'lucide-react';
+import { User, Copy, Share2, Loader2, RefreshCcw, Languages, Expand } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from '@/components/logo';
 import ReactMarkdown from 'react-markdown';
@@ -13,9 +19,10 @@ import remarkGfm from 'remark-gfm';
 
 interface ChatMessageItemProps {
   message: Message;
+  onAction: (messageId: string, action: AiAction, context: any) => void;
 }
 
-export function ChatMessageItem({ message }: ChatMessageItemProps) {
+export function ChatMessageItem({ message, onAction }: ChatMessageItemProps) {
   const { toast } = useToast();
   const isUser = message.role === 'user';
 
@@ -73,12 +80,33 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
               </ReactMarkdown>
             </article>
             {!isUser && message.text && (
-              <div className="mt-2 flex items-center gap-2 pt-2 border-t border-border/50">
+              <div className="mt-2 flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
                 <Button variant="ghost" size="sm" onClick={handleCopy} className="text-xs h-7 px-2">
                   <Copy className="mr-1 h-3 w-3" /> Copy
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleShare} className="text-xs h-7 px-2">
                   <Share2 className="mr-1 h-3 w-3" /> Share
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-xs h-7 px-2">
+                      <RefreshCcw className="mr-1 h-3 w-3" /> Rephrase
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => onAction(message.id, 'rephrase', { style: 'simpler' })}>
+                      Make Simpler
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onAction(message.id, 'rephrase', { style: 'more formal' })}>
+                      Make More Formal
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button variant="ghost" size="sm" onClick={() => onAction(message.id, 'translate', { language: 'Spanish' })} className="text-xs h-7 px-2">
+                  <Languages className="mr-1 h-3 w-3" /> Translate
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => onAction(message.id, 'expand', null)} className="text-xs h-7 px-2">
+                  <Expand className="mr-1 h-3 w-3" /> Expand
                 </Button>
               </div>
             )}
