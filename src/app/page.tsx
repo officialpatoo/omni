@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import type { Message, ChatSession } from '@/types';
 import { analyzeImageQuery } from '@/ai/flows/analyze-image-query';
 import { invokeOmniChatFlow } from '@/ai/flows/OmniChatFlow';
@@ -367,6 +368,12 @@ export default function HomePage() {
                     isLoading={isAiLoading}
                     onOpenCamera={() => setIsCameraModalOpen(true)}
                   />
+                  <p className="px-2 pt-2 text-center text-xs text-muted-foreground">
+                    Omni can make mistakes. Consider checking important information.
+                    <Link href="#" className="underline ml-1">
+                      Learn More
+                    </Link>
+                  </p>
             </div>
         </div>
       </div>
