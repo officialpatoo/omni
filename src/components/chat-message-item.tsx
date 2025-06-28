@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { User, Copy, Share2, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from '@/components/logo';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatMessageItemProps {
   message: Message;
@@ -65,8 +67,11 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
                 />
               </div>
             )}
-            {/* Using whitespace-pre-wrap to respect newlines from AI */}
-            <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.text}</p>
+            <article className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-background/50 prose-pre:p-2 prose-pre:rounded-md">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.text}
+              </ReactMarkdown>
+            </article>
             {!isUser && message.text && (
               <div className="mt-2 flex items-center gap-2 pt-2 border-t border-border/50">
                 <Button variant="ghost" size="sm" onClick={handleCopy} className="text-xs h-7 px-2">
