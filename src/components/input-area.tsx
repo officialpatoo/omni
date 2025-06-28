@@ -9,15 +9,17 @@ import { Paperclip, Mic, Send, Camera, XCircle, Loader2 } from 'lucide-react';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from '@/lib/utils';
 
 
 interface InputAreaProps {
   onSendMessage: (text: string, image?: File) => void;
   isLoading: boolean;
   onOpenCamera: () => void;
+  layout?: 'inline' | 'block';
 }
 
-export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaProps) {
+export function InputArea({ onSendMessage, isLoading, onOpenCamera, layout = 'inline' }: InputAreaProps) {
   const [text, setText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -92,12 +94,13 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
     }
   };
 
+  const isBlockLayout = layout === 'block';
 
   return (
     <TooltipProvider>
-      <form onSubmit={handleSubmit} className="p-4 border-t bg-card">
+      <form onSubmit={handleSubmit} className={cn(isBlockLayout ? "" : "p-4 border-t bg-card")}>
         {imagePreview && (
-          <div className="mb-2 relative w-24 h-24 rounded-md overflow-hidden border"> {/* Adjusted preview size */}
+          <div className="mb-2 relative w-24 h-24 rounded-md overflow-hidden border">
             <Image src={imagePreview} alt="Preview" layout="fill" objectFit="cover" data-ai-hint="image preview"/>
             <Button
               variant="ghost"
@@ -110,9 +113,12 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
             </Button>
           </div>
         )}
-        <div className="flex items-center w-full gap-2 px-3 py-1.5 rounded-lg border border-input bg-background">
+        <div className={cn(
+          "flex w-full items-center gap-2 rounded-lg border border-input bg-background",
+          isBlockLayout ? "flex-col p-4 gap-4" : "px-3 py-1.5"
+        )}>
           {/* Left Icons Group */}
-          <div className="flex items-center gap-0.5">
+          <div className={cn("flex items-center", isBlockLayout ? "gap-2" : "gap-0.5")}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -160,7 +166,10 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={isListening ? "Listening..." : "Ask Omni..."}
-            className="flex-1 resize-none bg-transparent border-0 focus:ring-0 p-0 self-center min-h-[24px] max-h-[120px] text-sm"
+            className={cn(
+              "flex-1 resize-none bg-transparent border-0 focus:ring-0 p-0 self-center min-h-[24px] max-h-[120px]",
+              isBlockLayout ? "w-full text-center" : "text-sm"
+            )}
             rows={1}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -172,7 +181,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
           />
 
           {/* Right Icons Group */}
-          <div className="flex items-center gap-0.5">
+          <div className={cn("flex items-center", isBlockLayout ? "gap-2" : "gap-0.5")}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 

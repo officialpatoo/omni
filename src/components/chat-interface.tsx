@@ -5,7 +5,6 @@ import React, { useEffect, useRef } from 'react';
 import { Message, AiAction } from '@/types';
 import { ChatMessageItem } from './chat-message-item';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Logo } from '@/components/logo';
 
 interface ChatInterfaceProps {
   messages: Message[];
@@ -25,15 +24,9 @@ export function ChatInterface({ messages, onAction }: ChatInterfaceProps) {
   return (
     <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
       <div ref={viewportRef} className="h-full">
-      {messages.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-full text-center">
-            <Logo width={200} height={200} priority />
-        </div>
-      ) : (
-        messages.map((msg) => (
+        {messages.map((msg) => (
             <ChatMessageItem key={msg.id} message={msg} onAction={onAction} />
-        ))
-      )}
+        ))}
       </div>
     </ScrollArea>
   );

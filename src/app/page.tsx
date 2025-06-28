@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from 'react';
@@ -24,6 +23,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { Logo } from '@/components/logo';
 
 async function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -403,6 +403,15 @@ export default function HomePage() {
     );
   }
 
+  const disclaimer = (
+    <p className="px-2 pt-2 text-center text-xs text-muted-foreground">
+      Omni can make mistakes. Consider checking important information.
+      <Link href="#" className="underline ml-1">
+        Learn More
+      </Link>
+    </p>
+  );
+
   return (
     <SidebarProvider>
       <AppSidebar
@@ -420,24 +429,37 @@ export default function HomePage() {
       />
       <div className="flex flex-col h-screen flex-1">
         <PageHeader />
-        <main className="flex-1 flex flex-col overflow-hidden bg-background">
-          <ChatInterface messages={messages} onAction={handleAiAction} />
-        </main>
-        <div className="flex justify-center bg-background">
-            <div className="w-full max-w-2xl px-2 pb-2">
-                 <InputArea
-                    onSendMessage={handleSendMessage}
-                    isLoading={isAiLoading}
-                    onOpenCamera={() => setIsCameraModalOpen(true)}
-                  />
-                  <p className="px-2 pt-2 text-center text-xs text-muted-foreground">
-                    Omni can make mistakes. Consider checking important information.
-                    <Link href="#" className="underline ml-1">
-                      Learn More
-                    </Link>
-                  </p>
+        {messages.length === 0 ? (
+          <main className="flex-1 flex flex-col items-center justify-center gap-8 p-4 bg-background">
+            <Logo width={200} height={200} priority />
+            <div className="w-full max-w-2xl">
+              <InputArea
+                onSendMessage={handleSendMessage}
+                isLoading={isAiLoading}
+                onOpenCamera={() => setIsCameraModalOpen(true)}
+                layout="block"
+              />
+              {disclaimer}
             </div>
-        </div>
+          </main>
+        ) : (
+          <>
+            <main className="flex-1 flex flex-col overflow-hidden bg-background">
+              <ChatInterface messages={messages} onAction={handleAiAction} />
+            </main>
+            <div className="flex justify-center bg-background border-t">
+              <div className="w-full max-w-2xl px-2 pb-2">
+                <InputArea
+                  onSendMessage={handleSendMessage}
+                  isLoading={isAiLoading}
+                  onOpenCamera={() => setIsCameraModalOpen(true)}
+                  layout="inline"
+                />
+                {disclaimer}
+              </div>
+            </div>
+          </>
+        )}
       </div>
       <CameraCaptureModal
         isOpen={isCameraModalOpen}
