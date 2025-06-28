@@ -10,6 +10,8 @@ import { generateImage } from '@/ai/flows/generate-image';
 import { rephraseText } from '@/ai/flows/rephrase-text';
 import { translateText } from '@/ai/flows/translate-text';
 import { expandIdea } from '@/ai/flows/expand-idea';
+import { improvePrompt } from '@/ai/flows/improve-prompt';
+
 
 import { ChatInterface } from '@/components/chat-interface';
 import { InputArea } from '@/components/input-area';
@@ -270,8 +272,10 @@ export default function HomePage() {
       toast({ title: "AI is busy", description: "Please wait for the current response to finish.", variant: "default" });
       return;
     }
-    const originalMessage = messages.find(m => m.id === messageId);
-    if (!originalMessage) {
+    const aiMessageIndex = messages.findIndex(m => m.id === messageId);
+    const aiMessage = messages[aiMessageIndex];
+
+    if (!aiMessage) {
       toast({ title: "Error", description: "Original message not found.", variant: "destructive" });
       return;
     }
@@ -283,16 +287,25 @@ export default function HomePage() {
       let aiResponseText = '';
       switch (action) {
         case 'rephrase':
-          const rephraseResult = await rephraseText({ text: originalMessage.text, style: context.style });
+          const rephraseResult = await rephraseText({ text: aiMessage.text, style: context.style });
           aiResponseText = `**Rephrased (${context.style}):**\n\n${rephraseResult.rephrasedText}`;
           break;
         case 'translate':
-          const translateResult = await translateText({ text: originalMessage.text, language: context.language });
+          const translateResult = await translateText({ text: aiMessage.text, language: context.language });
           aiResponseText = `**Translated (Spanish):**\n\n${translateResult.translatedText}`;
           break;
         case 'expand':
-          const expandResult = await expandIdea({ text: originalMessage.text });
+          const expandResult = await expandIdea({ text: aiMessage.text });
           aiResponseText = `**Expanded Idea:**\n\n${expandResult.expandedText}`;
+          break;
+        case 'improve_prompt':
+          const userMessage = messages[aiMessageIndex - 1];
+          if (userMessage && userMessage.role === 'user') {
+            const improveResult = await improvePrompt({ originalPrompt: userMessage.text, aiResponse: aiMessage.text });
+            aiResponseText = `**Prompt Suggestion:**\n\n${improveResult.improvedPrompt}`;
+          } else {
+            throw new Error("Could not find the original user prompt for this response.");
+          }
           break;
       }
       updateMessageInCurrentChat(assistantMessageId, { text: aiResponseText, isLoading: false });

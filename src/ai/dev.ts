@@ -9,3 +9,4 @@ import '@/ai/flows/generate-image.ts';
 import '@/ai/flows/rephrase-text';
 import '@/ai/flows/translate-text';
 import '@/ai/flows/expand-idea';
+import '@/ai/flows/improve-prompt';

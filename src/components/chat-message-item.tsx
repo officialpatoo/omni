@@ -5,7 +5,7 @@ import { Message, AiAction } from '@/types';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { User, Copy, Share2, Loader2, RefreshCcw, Languages, Expand } from 'lucide-react';
+import { User, Copy, Share2, Loader2, RefreshCcw, Languages, Expand, Lightbulb } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,6 +107,9 @@ export function ChatMessageItem({ message, onAction }: ChatMessageItemProps) {
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => onAction(message.id, 'expand', null)} className="text-xs h-7 px-2">
                   <Expand className="mr-1 h-3 w-3" /> Expand
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => onAction(message.id, 'improve_prompt', null)} className="text-xs h-7 px-2">
+                  <Lightbulb className="mr-1 h-3 w-3" /> Improve Prompt
                 </Button>
               </div>
             )}
