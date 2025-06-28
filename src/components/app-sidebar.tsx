@@ -90,7 +90,7 @@ export function AppSidebar({
       <SidebarHeader className="p-4">
         {/* Show logo in sidebar header only on mobile */}
         {isMobile && (
-          <Link href="/">
+          <Link href="src/logo.png">
             <Logo />
           </Link>
         )}

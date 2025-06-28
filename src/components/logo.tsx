@@ -14,8 +14,8 @@ export function Logo({ className, priority, width, height, fill = false }: LogoP
     <div className={cn("relative", className)}>
       {fill ? (
         <Image 
-          src="/logo.svg" 
-          alt="PATOOWORLD PA Logo" 
+          src="/logo.png" 
+          alt="PATOOWORLD Logo" 
           priority={priority} 
           fill 
           style={{ objectFit: 'contain' }}
@@ -23,8 +23,8 @@ export function Logo({ className, priority, width, height, fill = false }: LogoP
         />
       ) : (
         <Image 
-          src="/logo.svg" 
-          alt="PATOOWORLD PA Logo" 
+          src="/logo.png" 
+          alt="PATOOWORLD Logo" 
           priority={priority} 
           width={width || 0} // width and height are required if not fill
           height={height || 0} // width and height are required if not fill

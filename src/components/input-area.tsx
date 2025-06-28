@@ -194,7 +194,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
               size="icon" 
               disabled={isLoading || (!text.trim() && !imageFile)} 
               aria-label="Send message"
-              className="h-8 w-8 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full"
+              className="h-8 w-8 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full transition-transform duration-150 ease-in-out hover:scale-110 active:scale-100"
             >
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
             </Button>

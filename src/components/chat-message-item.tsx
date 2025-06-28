@@ -34,14 +34,14 @@ export function ChatMessageItem({ message }: ChatMessageItemProps) {
   };
 
   return (
-    <div className={cn("flex items-start gap-3 py-4", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("flex items-start gap-3 py-4 animate-fade-in-up", isUser ? "justify-end" : "justify-start")}>
       {!isUser && (
         <Logo fill className="h-8 w-8 shrink-0" />
       )}
       <div
         className={cn(
           "max-w-[75%] rounded-lg p-3 shadow-md",
-          isUser ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground"
+          isUser ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground border"
         )}
       >
         {message.isLoading ? (
