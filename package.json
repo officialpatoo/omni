@@ -71,7 +71,8 @@
   "description": "This is a NextJS starter in Firebase Studio.",
   "main": "index.js",
   "directories": {
-    "doc": "docs"
+    "doc": "docs",
+    "lib": "lib"
   },
   "keywords": [],
   "author": "",

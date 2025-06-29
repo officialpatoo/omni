@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import type { Message, ChatSession, AiAction } from '@/types';
 import { analyzeImageQuery } from '@/ai/flows/analyze-image-query';
-import { invokeOmniChat } from '@/ai/flows/omni-chat-flow';
+import { invokeOmniChatFlow } from '@/ai/flows/OmniChatFlow.ts';
 import { generateImage } from '@/ai/flows/generate-image';
 import { rephraseText } from '@/ai/flows/rephrase-text';
 import { translateText } from '@/ai/flows/translate-text';
@@ -222,7 +222,7 @@ export default function HomePage() {
         });
 
       } else { // Text generation
-        const aiResponse = await invokeOmniChat({ prompt: text });
+        const aiResponse = await invokeOmniChatFlow({ prompt: text });
         updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.responseText, isLoading: false });
       }
     } catch (error) {

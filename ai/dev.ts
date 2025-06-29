@@ -3,7 +3,7 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/omni-chat-flow';
+import '@/ai/flows/OmniChatFlow.ts';
 import '@/ai/flows/summarize-information.ts';
 import '@/ai/flows/analyze-image-query.ts';
 import '@/ai/flows/generate-image.ts';
