@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { AppProviders } from '@/components/app-providers';
 
 export const metadata: Metadata = {
-  title: 'PATOOWORLD PA',
-  description: 'AI-powered image analysis and content generation',
+  title: 'PATOOWORLD OMNI',
+  description: 'OMNI by PATOOWORLD, your advanced conversational Evolving GenAI assistant',
 };
 
 export default function RootLayout({

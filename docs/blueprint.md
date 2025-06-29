@@ -1,4 +1,4 @@
-# **App Name**: PatooVision AI
+# **App Name**: PATOOWORLD AI (OMNI)
 
 ## Core Features:
 
