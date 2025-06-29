@@ -3,10 +3,10 @@
 import { config } from 'dotenv';
 config();
 
-import '@/ai/flows/OmniChatFlow.ts';
-import '@/ai/flows/summarize-information.ts';
-import '@/ai/flows/analyze-image-query.ts';
-import '@/ai/flows/generate-image.ts';
+import '@/ai/flows/omni-chat-flow';
+import '@/ai/flows/summarize-information';
+import '@/ai/flows/analyze-image-query';
+import '@/ai/flows/generate-image';
 import '@/ai/flows/rephrase-text';
 import '@/ai/flows/translate-text';
 import '@/ai/flows/expand-idea';

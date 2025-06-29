@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import type { Message, ChatSession, AiAction } from '@/types';
 import { analyzeImageQuery } from '@/ai/flows/analyze-image-query';
-import { invokeOmniChatFlow } from '@/ai/flows/OmniChatFlow.ts';
+import { invokeOmniChat } from '@/ai/flows/omni-chat-flow';
 import { generateImage } from '@/ai/flows/generate-image';
 import { rephraseText } from '@/ai/flows/rephrase-text';
 import { translateText } from '@/ai/flows/translate-text';
@@ -222,7 +222,7 @@ export default function HomePage() {
         });
 
       } else { // Text generation
-        const aiResponse = await invokeOmniChatFlow({ prompt: text });
+        const aiResponse = await invokeOmniChat({ prompt: text });
         updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.responseText, isLoading: false });
       }
     } catch (error) {
@@ -449,7 +449,7 @@ export default function HomePage() {
               <ChatInterface messages={messages} onAction={handleAiAction} />
             </main>
             <div className="flex justify-center bg-background border-t">
-              <div className="w-full max-w-2xl px-2 pb-2">
+              <div className="w-full max-w-4xl px-2 pb-2">
                 <InputArea
                   onSendMessage={handleSendMessage}
                   isLoading={isAiLoading}
