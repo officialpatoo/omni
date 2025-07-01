@@ -1,4 +1,3 @@
-
 export type MessageRole = 'user' | 'assistant';
 
 export interface Message {
