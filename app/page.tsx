@@ -11,7 +11,7 @@ import { rephraseText } from '@/ai/flows/rephrase-text';
 import { translateText } from '@/ai/flows/translate-text';
 import { expandIdea } from '@/ai/flows/expand-idea';
 import { improvePrompt } from '@/ai/flows/improve-prompt';
-
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 import { ChatInterface } from '@/components/chat-interface';
 import { InputArea } from '@/components/input-area';
@@ -50,6 +50,16 @@ export default function HomePage() {
   const { toast } = useToast();
 
   const [editingSessionDetails, setEditingSessionDetails] = useState<{ id: string; currentTitle: string } | null>(null);
+
+  const [audioState, setAudioState] = useState<{
+    playingMessageId: string | null;
+    loadingMessageId: string | null;
+    audio: HTMLAudioElement | null;
+  }>({
+    playingMessageId: null,
+    loadingMessageId: null,
+    audio: null,
+  });
 
   const getChatHistoryKey = useCallback(() => user ? `${LOCAL_STORAGE_CHAT_HISTORY_KEY_PREFIX}${user.uid}` : null, [user]);
   const getCurrentChatIdKey = useCallback(() => user ? `${LOCAL_STORAGE_CURRENT_CHAT_ID_KEY_PREFIX}${user.uid}` : null, [user]);
@@ -172,12 +182,20 @@ export default function HomePage() {
     );
   };
 
+  const handleStopPlayback = useCallback(() => {
+    if (audioState.audio) {
+      audioState.audio.pause();
+    }
+    setAudioState({ playingMessageId: null, loadingMessageId: null, audio: null });
+  }, [audioState.audio]);
+
 
   const handleSendMessage = useCallback(async (text: string, imageFile?: File) => {
     if (!currentChatId) {
       toast({ title: "Error", description: "No active chat session.", variant: "destructive" });
       return;
     }
+    handleStopPlayback();
     setIsAiLoading(true);
     const userMessageText = text || (imageFile ? "Image attached" : "Empty message");
 
@@ -237,13 +255,14 @@ export default function HomePage() {
       setIsAiLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChatId, toast]);
+  }, [currentChatId, toast, handleStopPlayback]);
 
   const handleCameraCapture = useCallback(async (imageDataUri: string) => {
     if (!currentChatId) {
       toast({ title: "Error", description: "No active chat session.", variant: "destructive" });
       return;
     }
+    handleStopPlayback();
     setIsCameraModalOpen(false);
     setIsAiLoading(true);
 
@@ -266,9 +285,10 @@ export default function HomePage() {
       setIsAiLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentChatId, toast]);
+  }, [currentChatId, toast, handleStopPlayback]);
 
   const handleAiAction = useCallback(async (messageId: string, action: AiAction, context: any) => {
+    handleStopPlayback();
     if (isAiLoading) {
       toast({ title: "AI is busy", description: "Please wait for the current response to finish.", variant: "default" });
       return;
@@ -278,6 +298,27 @@ export default function HomePage() {
 
     if (!aiMessage) {
       toast({ title: "Error", description: "Original message not found.", variant: "destructive" });
+      return;
+    }
+
+    if (action === 'read_aloud') {
+      if (audioState.playingMessageId === messageId) {
+        handleStopPlayback();
+        return;
+      }
+      
+      setAudioState({ ...audioState, loadingMessageId: messageId });
+      try {
+        const response = await textToSpeech({ text: aiMessage.text });
+        const audio = new Audio(response.audioDataUri);
+        audio.onended = handleStopPlayback;
+        audio.play();
+        setAudioState({ playingMessageId: messageId, loadingMessageId: null, audio });
+      } catch (error) {
+        console.error(`AI Action Error (read_aloud):`, error);
+        toast({ title: "Read Aloud Error", description: "Failed to generate audio.", variant: "destructive" });
+        setAudioState({ playingMessageId: null, loadingMessageId: null, audio: null });
+      }
       return;
     }
     
@@ -322,11 +363,12 @@ export default function HomePage() {
       setIsAiLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAiLoading, messages, toast]);
+  }, [isAiLoading, messages, toast, handleStopPlayback, audioState]);
 
 
   const startNewChat = () => {
     if (!user) return; 
+    handleStopPlayback();
     const newSessionId = uuidv4();
     const newSessionTitle = `Chat ${chatHistory.length + 1}`; 
     const newSession: ChatSession = {
@@ -347,6 +389,7 @@ export default function HomePage() {
   };
 
   const selectChat = (id: string) => {
+    handleStopPlayback();
     setCurrentChatId(id);
     const selectedSession = chatHistory.find(s => s.id === id);
     if (selectedSession) {
@@ -356,6 +399,7 @@ export default function HomePage() {
   };
 
   const deleteChat = (id: string) => {
+    handleStopPlayback();
     setChatHistory((prev) => {
       const updatedHistory = prev.filter(s => s.id !== id);
       if (currentChatId === id) {
@@ -446,7 +490,12 @@ export default function HomePage() {
         ) : (
           <>
             <main className="flex-1 flex flex-col overflow-hidden bg-background">
-              <ChatInterface messages={messages} onAction={handleAiAction} />
+              <ChatInterface 
+                messages={messages} 
+                onAction={handleAiAction} 
+                audioState={audioState} 
+                onStopPlayback={handleStopPlayback}
+              />
             </main>
             <div className="flex justify-center bg-background border-t">
               <div className="w-full max-w-4xl px-2 pb-2">

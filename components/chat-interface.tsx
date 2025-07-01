@@ -9,9 +9,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface ChatInterfaceProps {
   messages: Message[];
   onAction: (messageId: string, action: AiAction, context: any) => void;
+  audioState: {
+    playingMessageId: string | null;
+    loadingMessageId: string | null;
+  };
+  onStopPlayback: () => void;
 }
 
-export function ChatInterface({ messages, onAction }: ChatInterfaceProps) {
+export function ChatInterface({ messages, onAction, audioState, onStopPlayback }: ChatInterfaceProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -25,7 +30,13 @@ export function ChatInterface({ messages, onAction }: ChatInterfaceProps) {
     <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
       <div ref={viewportRef} className="h-full">
         {messages.map((msg) => (
-            <ChatMessageItem key={msg.id} message={msg} onAction={onAction} />
+            <ChatMessageItem 
+              key={msg.id} 
+              message={msg} 
+              onAction={onAction} 
+              audioState={audioState}
+              onStopPlayback={onStopPlayback}
+            />
         ))}
       </div>
     </ScrollArea>

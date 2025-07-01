@@ -5,7 +5,7 @@ import { Message, AiAction } from '@/types';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { User, Copy, Share2, Loader2, RefreshCcw, Languages, Expand, Lightbulb } from 'lucide-react';
+import { User, Copy, Share2, Loader2, RefreshCcw, Languages, Expand, Lightbulb, Volume2, Square } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,11 +20,19 @@ import remarkGfm from 'remark-gfm';
 interface ChatMessageItemProps {
   message: Message;
   onAction: (messageId: string, action: AiAction, context: any) => void;
+  audioState: {
+    playingMessageId: string | null;
+    loadingMessageId: string | null;
+  };
+  onStopPlayback: () => void;
 }
 
-export function ChatMessageItem({ message, onAction }: ChatMessageItemProps) {
+export function ChatMessageItem({ message, onAction, audioState, onStopPlayback }: ChatMessageItemProps) {
   const { toast } = useToast();
   const isUser = message.role === 'user';
+
+  const isPlaying = audioState.playingMessageId === message.id;
+  const isLoadingAudio = audioState.loadingMessageId === message.id;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.text)
@@ -41,6 +49,14 @@ export function ChatMessageItem({ message, onAction }: ChatMessageItemProps) {
     // Simplified: Just Twitter. Could expand to use Web Share API if available.
     window.open(`https://twitter.com/intent/tweet?text=${shareText}`, '_blank');
   };
+  
+  const handleReadAloudClick = () => {
+    if (isPlaying) {
+      onStopPlayback();
+    } else {
+      onAction(message.id, 'read_aloud', null);
+    }
+  }
 
   return (
     <div className={cn("flex items-start gap-3 py-4 animate-fade-in-up", isUser ? "justify-end" : "justify-start")}>
@@ -81,6 +97,16 @@ export function ChatMessageItem({ message, onAction }: ChatMessageItemProps) {
             </article>
             {!isUser && message.text && (
               <div className="mt-2 flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
+                 <Button variant="ghost" size="sm" onClick={handleReadAloudClick} className="text-xs h-7 px-2">
+                  {isLoadingAudio ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : isPlaying ? (
+                    <Square className="mr-1 h-3 w-3" />
+                  ) : (
+                    <Volume2 className="mr-1 h-3 w-3" />
+                  )}
+                  {isPlaying ? 'Stop' : 'Read Aloud'}
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleCopy} className="text-xs h-7 px-2">
                   <Copy className="mr-1 h-3 w-3" /> Copy
                 </Button>
