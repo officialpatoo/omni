@@ -15,7 +15,7 @@ interface CameraCaptureModalProps {
 export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCaptureModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [hasStream, setHasStream] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -23,13 +23,14 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
     setError(null);
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      setStream(mediaStream);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
+      setHasStream(true);
     } catch (err) {
       console.error("Error accessing camera:", err);
       setError("Could not access camera. Please ensure permissions are granted.");
+      setHasStream(false);
       toast({
         title: "Camera Error",
         description: "Could not access camera. Please ensure permissions are granted.",
@@ -39,14 +40,13 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
   }, [toast]);
 
   const stopCamera = useCallback(() => {
-    if (stream) {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-    if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-  }, [stream]);
+    setHasStream(false);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -54,14 +54,15 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
     } else {
       stopCamera();
     }
-    return () => { // Cleanup on unmount if modal is open
-      if(stream) stopCamera();
+
+    return () => {
+      stopCamera();
     };
-  }, [isOpen, startCamera, stopCamera, stream]);
+  }, [isOpen, startCamera, stopCamera]);
 
 
   const handleCapture = () => {
-    if (videoRef.current && canvasRef.current && stream) {
+    if (videoRef.current && canvasRef.current && hasStream) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
       canvas.width = video.videoWidth;
@@ -92,13 +93,13 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
           )}
           <div className="aspect-video bg-muted rounded-md overflow-hidden relative">
             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-            {!stream && !error && <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">Starting camera...</div>}
+            {!hasStream && !error && <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">Starting camera...</div>}
           </div>
           <canvas ref={canvasRef} style={{ display: 'none' }} />
         </div>
         <DialogFooter className="p-6 pt-0">
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleCapture} disabled={!stream || !!error}>
+          <Button onClick={handleCapture} disabled={!hasStream || !!error}>
             <Camera className="mr-2 h-4 w-4" /> Capture
           </Button>
         </DialogFooter>
