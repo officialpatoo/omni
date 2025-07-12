@@ -189,7 +189,9 @@ export default function HomePage() {
   }, [audioState.audio]);
 
 
-  const handleSendMessage = useCallback(async (text: string, imageFile?: File) => {
+  const handleSendMessage = useCallback(async (text: string, options: { imageFile?: File, useRealtimeSearch?: boolean }) => {
+    const { imageFile, useRealtimeSearch } = options;
+    
     if (!currentChatId) {
       toast({ title: "Error", description: "No active chat session.", variant: "destructive" });
       return;
@@ -239,7 +241,7 @@ export default function HomePage() {
         });
 
       } else { // Text generation
-        const aiResponse = await invokeOmniChat({ prompt: text });
+        const aiResponse = await invokeOmniChat({ prompt: text, useRealtimeSearch });
         updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.responseText, isLoading: false });
       }
     } catch (error) {
@@ -473,42 +475,31 @@ export default function HomePage() {
       />
       <div className="flex flex-col h-screen flex-1">
         <PageHeader />
-        {messages.length === 0 ? (
-          <main className="flex-1 flex flex-col items-center justify-center gap-8 p-4 bg-background">
-            <Logo width={200} height={200} priority />
-            <div className="w-full max-w-2xl">
-              <InputArea
-                onSendMessage={handleSendMessage}
-                isLoading={isAiLoading}
-                onOpenCamera={() => setIsCameraModalOpen(true)}
-                layout="block"
-              />
-              {disclaimer}
+        <main className="flex-1 flex flex-col overflow-hidden bg-background">
+          {messages.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-8 p-4">
+              <Logo width={200} height={200} priority />
             </div>
-          </main>
-        ) : (
-          <>
-            <main className="flex-1 flex flex-col overflow-hidden bg-background">
-              <ChatInterface 
-                messages={messages} 
-                onAction={handleAiAction} 
-                audioState={audioState} 
-                onStopPlayback={handleStopPlayback}
-              />
-            </main>
-            <div className="flex justify-center bg-background border-t">
-              <div className="w-full max-w-4xl px-2 pb-2">
-                <InputArea
-                  onSendMessage={handleSendMessage}
-                  isLoading={isAiLoading}
-                  onOpenCamera={() => setIsCameraModalOpen(true)}
-                  layout="inline"
-                />
-                {disclaimer}
-              </div>
-            </div>
-          </>
-        )}
+          ) : (
+            <ChatInterface 
+              messages={messages} 
+              onAction={handleAiAction} 
+              audioState={audioState} 
+              onStopPlayback={handleStopPlayback}
+            />
+          )}
+        </main>
+        <div className="flex justify-center bg-background border-t">
+          <div className="w-full max-w-4xl px-2 pb-2">
+            <InputArea
+              onSendMessage={handleSendMessage}
+              isLoading={isAiLoading}
+              onOpenCamera={() => setIsCameraModalOpen(true)}
+              layout="inline"
+            />
+            {disclaimer}
+          </div>
+        </div>
       </div>
       <CameraCaptureModal
         isOpen={isCameraModalOpen}

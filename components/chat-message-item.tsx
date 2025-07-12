@@ -65,7 +65,7 @@ export function ChatMessageItem({ message, onAction, audioState, onStopPlayback 
       )}
       <div
         className={cn(
-          "max-w-[75%] rounded-lg p-3 shadow-md",
+          "max-w-[85%] sm:max-w-[75%] rounded-lg p-3 shadow-md",
           isUser ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground border"
         )}
       >
