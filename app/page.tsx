@@ -47,6 +47,7 @@ export default function HomePage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const { toast } = useToast();
 
   const [editingSessionDetails, setEditingSessionDetails] = useState<{ id: string; currentTitle: string } | null>(null);
@@ -518,7 +519,7 @@ export default function HomePage() {
         onSignOut={signOut}
       />
       <div className="flex h-screen flex-1 flex-col">
-        <PageHeader />
+        <PageHeader isVisible={isHeaderVisible} />
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 flex flex-col items-center overflow-auto">
             <div className="w-full max-w-4xl flex-1 flex flex-col">
@@ -532,6 +533,7 @@ export default function HomePage() {
                   onAction={handleAiAction} 
                   audioState={audioState} 
                   onStopPlayback={handleStopPlayback}
+                  onScroll={(isScrollingDown) => setIsHeaderVisible(!isScrollingDown)}
                 />
               )}
             </div>

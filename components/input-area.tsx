@@ -114,7 +114,14 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
 
   return (
     <TooltipProvider>
-       <div className="w-full flex flex-col gap-2 p-2 rounded-3xl border bg-card/80 backdrop-blur-sm">
+       <div 
+        className="w-full flex flex-col gap-2 p-2 rounded-3xl border"
+        style={{ 
+          backgroundColor: 'hsl(var(--input-area-background))', 
+          color: 'hsl(var(--input-area-foreground))',
+          borderColor: 'hsl(var(--border))' 
+        }}
+      >
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-2">
             {imagePreview && (
                 <div className="mb-2 relative w-24 h-24 rounded-md overflow-hidden border">
@@ -131,7 +138,9 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                 </div>
             )}
             <div className="flex w-full items-start gap-2">
-                 <div className="flex-1 flex items-start gap-2 rounded-2xl border bg-background px-3 py-2">
+                 <div 
+                    className="flex-1 flex items-start gap-2 rounded-2xl border bg-background px-3 py-2"
+                 >
                     {/* Left Icons Group */}
                     <div className="flex items-center gap-1 pt-1">
                     <Tooltip>

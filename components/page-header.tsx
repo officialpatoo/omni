@@ -17,13 +17,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { UserCircle, LogIn, UserPlus, LogOut, Settings, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-export function PageHeader() {
+interface PageHeaderProps {
+  isVisible: boolean;
+}
+
+export function PageHeader({ isVisible }: PageHeaderProps) {
   const { user, isLoading, signOut } = useAuth();
   const { isMobile, state: sidebarState } = useSidebar();
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 shadow-sm sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:py-4">
+    <header className={cn(
+      "sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 shadow-sm sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:py-4 transition-transform duration-300",
+      !isVisible && "-translate-y-full sm:translate-y-0"
+    )}>
       {/* Left items container */}
       <div className="flex items-center">
         {user && <SidebarTrigger className="h-8 w-8" />}
