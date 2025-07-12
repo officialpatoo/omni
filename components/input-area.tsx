@@ -18,10 +18,9 @@ interface InputAreaProps {
   onSendMessage: (text: string, options: { imageFile?: File, useRealtimeSearch?: boolean }) => void;
   isLoading: boolean;
   onOpenCamera: () => void;
-  layout?: 'inline' | 'block';
 }
 
-export function InputArea({ onSendMessage, isLoading, onOpenCamera, layout = 'inline' }: InputAreaProps) {
+export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaProps) {
   const [text, setText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -101,11 +100,10 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, layout = 'in
     }
   };
 
-  const isBlockLayout = layout === 'block';
 
   return (
     <TooltipProvider>
-      <div className={cn("flex flex-col gap-2", isBlockLayout ? "items-center" : "")}>
+      <div className="flex flex-col gap-2">
         <form onSubmit={handleSubmit} className="w-full">
           {imagePreview && (
             <div className="mb-2 relative w-24 h-24 rounded-md overflow-hidden border">
@@ -121,12 +119,9 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, layout = 'in
               </Button>
             </div>
           )}
-          <div className={cn(
-            "flex w-full items-center gap-2 rounded-lg border border-input bg-background",
-            isBlockLayout ? "flex-col p-4 gap-4" : "px-3 py-1.5"
-          )}>
+          <div className="flex w-full items-center gap-2 rounded-lg border border-input bg-background px-3 py-1.5">
             {/* Left Icons Group */}
-            <div className={cn("flex items-center", isBlockLayout ? "gap-2" : "gap-0.5")}>
+            <div className="flex items-center gap-0.5">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
@@ -174,10 +169,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, layout = 'in
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={isListening ? "Listening..." : "Ask Omni..."}
-              className={cn(
-                "flex-1 resize-none bg-transparent border-0 focus:ring-0 p-0 self-center min-h-[24px] max-h-[120px]",
-                isBlockLayout ? "w-full text-center" : "text-sm"
-              )}
+              className="flex-1 resize-none bg-transparent border-0 focus:ring-0 p-0 self-center min-h-[24px] max-h-[120px] text-sm"
               rows={1}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -189,7 +181,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, layout = 'in
             />
 
             {/* Right Icons Group */}
-            <div className={cn("flex items-center", isBlockLayout ? "gap-2" : "gap-0.5")}>
+            <div className="flex items-center gap-0.5">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 

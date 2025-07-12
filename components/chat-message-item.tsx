@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from 'next/image';
@@ -16,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from '@/components/logo';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useEffect, useState } from 'react';
 
 interface ChatMessageItemProps {
   message: Message;
@@ -27,12 +29,39 @@ interface ChatMessageItemProps {
   onStopPlayback: () => void;
 }
 
+const STREAMING_SPEED = 20; // Lower is faster
+
 export function ChatMessageItem({ message, onAction, audioState, onStopPlayback }: ChatMessageItemProps) {
   const { toast } = useToast();
+  const [displayedText, setDisplayedText] = useState('');
+  
   const isUser = message.role === 'user';
-
   const isPlaying = audioState.playingMessageId === message.id;
   const isLoadingAudio = audioState.loadingMessageId === message.id;
+
+  useEffect(() => {
+    if (message.role === 'assistant' && !message.isLoading && !message.error) {
+      setDisplayedText(''); // Reset on new message
+      
+      const words = message.text.split(' ');
+      let currentText = '';
+      let wordIndex = 0;
+
+      const intervalId = setInterval(() => {
+        if (wordIndex < words.length) {
+          currentText += (wordIndex > 0 ? ' ' : '') + words[wordIndex];
+          setDisplayedText(currentText);
+          wordIndex++;
+        } else {
+          clearInterval(intervalId);
+        }
+      }, STREAMING_SPEED);
+
+      return () => clearInterval(intervalId);
+    } else {
+      setDisplayedText(message.text);
+    }
+  }, [message.text, message.role, message.isLoading, message.error]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.text)
@@ -57,6 +86,8 @@ export function ChatMessageItem({ message, onAction, audioState, onStopPlayback 
       onAction(message.id, 'read_aloud', null);
     }
   }
+
+  const renderedText = isUser ? message.text : displayedText;
 
   return (
     <div className={cn("flex items-start gap-3 py-4 animate-fade-in-up", isUser ? "justify-end" : "justify-start")}>
@@ -92,7 +123,7 @@ export function ChatMessageItem({ message, onAction, audioState, onStopPlayback 
             )}
             <article className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-background/50 prose-pre:p-2 prose-pre:rounded-md">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {message.text}
+                {renderedText}
               </ReactMarkdown>
             </article>
             {!isUser && message.text && (

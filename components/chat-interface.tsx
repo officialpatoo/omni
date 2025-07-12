@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useRef } from 'react';
@@ -20,14 +21,18 @@ export function ChatInterface({ messages, onAction, audioState, onStopPlayback }
   const viewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+    const viewport = viewportRef.current;
+    if (viewport) {
+      // Use requestAnimationFrame to scroll after the new message has been rendered
+      requestAnimationFrame(() => {
+        viewport.scrollTop = viewport.scrollHeight;
+      });
     }
   }, [messages]);
 
   return (
-    <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-      <div ref={viewportRef} className="h-full">
+    <ScrollArea className="flex-1" ref={scrollAreaRef} viewportRef={viewportRef}>
+      <div className="px-4 py-2">
         {messages.map((msg) => (
             <ChatMessageItem 
               key={msg.id} 
