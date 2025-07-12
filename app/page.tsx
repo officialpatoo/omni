@@ -367,6 +367,47 @@ export default function HomePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAiLoading, messages, toast, handleStopPlayback, audioState]);
 
+  const handleInputAction = useCallback(async (currentText: string, action: 'rephrase' | 'translate' | 'expand'): Promise<string> => {
+      if (isAiLoading) {
+        toast({ title: "AI is busy", description: "Please wait for the current response to finish." });
+        return currentText;
+      }
+      if (!currentText.trim()) {
+        toast({ title: "Input is empty", description: "Please type a message first.", variant: "destructive" });
+        return currentText;
+      }
+
+      setIsAiLoading(true);
+
+      try {
+        let resultText = '';
+        switch(action) {
+          case 'rephrase':
+            // For simplicity, we'll just use 'simpler' style here. This could be a dropdown in the future.
+            const rephraseResult = await rephraseText({ text: currentText, style: 'simpler' });
+            resultText = rephraseResult.rephrasedText;
+            break;
+          case 'translate':
+            // Translating to Spanish as an example.
+            const translateResult = await translateText({ text: currentText, language: 'Spanish' });
+            resultText = translateResult.translatedText;
+            break;
+          case 'expand':
+            const expandResult = await expandIdea({ text: currentText });
+            resultText = expandResult.expandedText;
+            break;
+        }
+        return resultText;
+      } catch (error) {
+        console.error(`Input Action Error (${action}):`, error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        toast({ title: "Action Failed", description: errorMessage, variant: "destructive" });
+        return currentText; // Return original text on error
+      } finally {
+        setIsAiLoading(false);
+      }
+  }, [isAiLoading, toast]);
+
 
   const startNewChat = () => {
     if (!user) return; 
@@ -501,6 +542,7 @@ export default function HomePage() {
                 onSendMessage={handleSendMessage}
                 isLoading={isAiLoading}
                 onOpenCamera={() => setIsCameraModalOpen(true)}
+                onInputAction={handleInputAction}
               />
                {disclaimer}
             </div>

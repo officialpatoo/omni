@@ -18,13 +18,15 @@ interface InputAreaProps {
   onSendMessage: (text: string, options: { imageFile?: File, useRealtimeSearch?: boolean }) => void;
   isLoading: boolean;
   onOpenCamera: () => void;
+  onInputAction: (currentText: string, action: 'rephrase' | 'translate' | 'expand') => Promise<string>;
 }
 
-export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaProps) {
+export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputAction }: InputAreaProps) {
   const [text, setText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [useRealtimeSearch, setUseRealtimeSearch] = useState(false);
+  const [isInputLoading, setIsInputLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -88,6 +90,14 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
     }
   };
 
+  const handleActionButtonClick = async (action: 'rephrase' | 'translate' | 'expand') => {
+    setIsInputLoading(true);
+    const newText = await onInputAction(text, action);
+    setText(newText);
+    setIsInputLoading(false);
+  };
+
+
   const toggleListening = () => {
     if (!speechSupported) {
       toast({ title: "Speech Recognition Not Supported", description: "Your browser does not support speech recognition.", variant: "destructive"});
@@ -100,6 +110,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
     }
   };
 
+  const anyLoading = isLoading || isInputLoading;
 
   return (
     <TooltipProvider>
@@ -130,7 +141,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
                             variant="ghost" 
                             size="icon" 
                             onClick={() => fileInputRef.current?.click()} 
-                            disabled={isLoading} 
+                            disabled={anyLoading} 
                             aria-label="Attach image"
                             className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         >
@@ -145,7 +156,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
                         accept="image/*"
                         onChange={handleImageChange}
                         className="hidden"
-                        disabled={isLoading}
+                        disabled={anyLoading}
                     />
                     <Tooltip>
                         <TooltipTrigger asChild>
@@ -154,7 +165,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
                             variant="ghost" 
                             size="icon" 
                             onClick={onOpenCamera} 
-                            disabled={isLoading} 
+                            disabled={anyLoading} 
                             aria-label="Open camera"
                             className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         >
@@ -178,7 +189,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
                         handleSubmit(e);
                         }
                     }}
-                    disabled={isLoading}
+                    disabled={anyLoading}
                     />
 
                     {/* Right Icons Group */}
@@ -190,7 +201,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
                             variant={isListening ? "secondary" : "ghost"} 
                             size="icon" 
                             onClick={toggleListening} 
-                            disabled={isLoading || !speechSupported}
+                            disabled={anyLoading || !speechSupported}
                             aria-label={isListening ? "Stop listening" : "Start voice input"}
                             className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         >
@@ -205,17 +216,17 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
                 <Button 
                     type="submit" 
                     size="icon" 
-                    disabled={isLoading || (!text.trim() && !imageFile)} 
+                    disabled={anyLoading || (!text.trim() && !imageFile)} 
                     aria-label="Send message"
                     className="h-12 w-12 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full flex-shrink-0"
                 >
-                    {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Send className="h-6 w-6" />}
+                    {anyLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Send className="h-6 w-6" />}
                 </Button>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                <Button variant="outline" size="sm" className="rounded-full text-xs" disabled><RefreshCcw className="mr-1 h-3 w-3" /> Rephrase</Button>
-                <Button variant="outline" size="sm" className="rounded-full text-xs" disabled><Languages className="mr-1 h-3 w-3" /> Translate</Button>
-                <Button variant="outline" size="sm" className="rounded-full text-xs" disabled><Expand className="mr-1 h-3 w-3" /> Expand</Button>
+                <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('rephrase')} disabled={anyLoading || !text.trim()}><RefreshCcw className="mr-1 h-3 w-3" /> Rephrase</Button>
+                <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('translate')} disabled={anyLoading || !text.trim()}><Languages className="mr-1 h-3 w-3" /> Translate</Button>
+                <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('expand')} disabled={anyLoading || !text.trim()}><Expand className="mr-1 h-3 w-3" /> Expand</Button>
                 <Button variant="outline" size="sm" className="rounded-full text-xs" disabled><PlusCircle className="mr-1 h-3 w-3" /> More</Button>
             </div>
         </form>
@@ -224,7 +235,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera }: InputAreaP
               <Search className="h-3.5 w-3.5" />
               <span>Search</span>
             </Label>
-            <Switch id="realtime-search" checked={useRealtimeSearch} onCheckedChange={setUseRealtimeSearch} disabled={isLoading} />
+            <Switch id="realtime-search" checked={useRealtimeSearch} onCheckedChange={setUseRealtimeSearch} disabled={anyLoading} />
           </div>
       </div>
     </TooltipProvider>
