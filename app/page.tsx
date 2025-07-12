@@ -451,12 +451,14 @@ export default function HomePage() {
   }
 
   const disclaimer = (
-    <p className="px-4 pb-2 text-center text-xs text-muted-foreground">
-      Omni can make mistakes. Consider checking important information.
-      <Link href="#" className="underline ml-1">
-        Learn More
-      </Link>
-    </p>
+    <div className="px-4 pb-2 text-center text-xs text-muted-foreground">
+      <p>
+        Omni can make mistakes. Consider checking important information.
+        <Link href="#" className="underline ml-1">
+          Learn More
+        </Link>
+      </p>
+    </div>
   );
 
   return (
@@ -477,11 +479,11 @@ export default function HomePage() {
       <div className="flex h-screen flex-1 flex-col">
         <PageHeader />
         <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 flex flex-col items-center overflow-hidden">
-            <div className="w-full max-w-4xl flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col items-center overflow-auto">
+            <div className="w-full max-w-4xl flex-1 flex flex-col">
               {messages.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center gap-8 p-4">
-                  <Logo width={200} height={200} priority />
+                <div className="flex-1 flex flex-col items-center justify-center gap-4 p-4">
+                  <Logo width={140} height={140} priority />
                 </div>
               ) : (
                 <ChatInterface 
@@ -494,15 +496,15 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex justify-center bg-background border-t">
-            <div className="w-full max-w-4xl px-4 py-2">
+            <div className="w-full max-w-4xl p-2 sm:p-4">
               <InputArea
                 onSendMessage={handleSendMessage}
                 isLoading={isAiLoading}
                 onOpenCamera={() => setIsCameraModalOpen(true)}
               />
+               {disclaimer}
             </div>
           </div>
-           {disclaimer}
         </main>
       </div>
       <CameraCaptureModal
