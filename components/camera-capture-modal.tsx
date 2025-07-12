@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Camera, ZapOff, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface CameraCaptureModalProps {
   isOpen: boolean;
@@ -30,12 +31,13 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
     setHasStream(false);
   }, []);
 
-  const startCamera = useCallback(async () => {
+  const startCamera = useCallback(async (mode: 'user' | 'environment') => {
     setError(null);
+    stopCamera(); 
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facingMode }
+          video: { facingMode: mode }
         });
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
@@ -47,30 +49,26 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
         setHasStream(false);
         toast({
           title: "Camera Error",
-          description: "Could not access camera. Please ensure permissions are granted.",
+          description: "Could not access camera. Please ensure permissions are granted or try switching cameras.",
           variant: "destructive",
         });
       }
     } else {
       setError("Camera not supported on this device.");
     }
-  }, [facingMode, toast]);
+  }, [stopCamera, toast]);
 
 
   useEffect(() => {
     if (isOpen) {
-      startCamera();
+      startCamera(facingMode);
     } else {
       stopCamera();
     }
-
-    return () => {
-      stopCamera();
-    };
-  }, [isOpen, startCamera, stopCamera]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, facingMode]); // Removed startCamera/stopCamera deps because they are stable now
 
   const handleSwitchCamera = () => {
-    stopCamera();
     setFacingMode(prevMode => prevMode === 'user' ? 'environment' : 'user');
   };
 
@@ -82,7 +80,7 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
       if (context) {
-        // Flip the image horizontally if it's the front-facing camera
+        // Flip the image horizontally if it's the front-facing camera for a mirror effect
         if (facingMode === 'user') {
             context.translate(canvas.width, 0);
             context.scale(-1, 1);
@@ -90,7 +88,7 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageDataUri = canvas.toDataURL('image/png');
         onCapture(imageDataUri);
-        onClose();
+        onClose(); // This now implicitly stops the camera via useEffect on `isOpen`
       }
     }
   };
@@ -99,11 +97,11 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] p-0">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="flex items-center gap-2 font-headline">
+          <DialogTitle className="flex items-center gap-2">
             <Camera className="h-6 w-6" /> Capture Image
           </DialogTitle>
         </DialogHeader>
-        <div className="p-6">
+        <div className="p-6 pt-2">
           {error && (
             <div className="mb-4 p-4 bg-destructive/10 text-destructive rounded-md flex items-center gap-2">
               <ZapOff className="h-5 w-5"/> {error}
@@ -115,7 +113,7 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
           </div>
           <canvas ref={canvasRef} style={{ display: 'none' }} />
         </div>
-        <DialogFooter className="p-6 pt-0 flex-row justify-between">
+        <DialogFooter className="p-6 pt-0 bg-background/95 flex-row sm:justify-between">
           <Button variant="outline" onClick={handleSwitchCamera} disabled={!hasStream}>
             <RefreshCw className="mr-2 h-4 w-4" /> Switch Camera
           </Button>
