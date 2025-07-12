@@ -1,9 +1,10 @@
+
 "use client";
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Camera, ZapOff } from 'lucide-react';
+import { Camera, ZapOff, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface CameraCaptureModalProps {
@@ -17,27 +18,8 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasStream, setHasStream] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const { toast } = useToast();
-
-  const startCamera = useCallback(async () => {
-    setError(null);
-    try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      setHasStream(true);
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      setError("Could not access camera. Please ensure permissions are granted.");
-      setHasStream(false);
-      toast({
-        title: "Camera Error",
-        description: "Could not access camera. Please ensure permissions are granted.",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
 
   const stopCamera = useCallback(() => {
     if (videoRef.current && videoRef.current.srcObject) {
@@ -47,6 +29,33 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
     }
     setHasStream(false);
   }, []);
+
+  const startCamera = useCallback(async () => {
+    setError(null);
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facingMode }
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+        }
+        setHasStream(true);
+      } catch (err) {
+        console.error("Error accessing camera:", err);
+        setError("Could not access camera. Please ensure permissions are granted.");
+        setHasStream(false);
+        toast({
+          title: "Camera Error",
+          description: "Could not access camera. Please ensure permissions are granted.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      setError("Camera not supported on this device.");
+    }
+  }, [facingMode, toast]);
+
 
   useEffect(() => {
     if (isOpen) {
@@ -60,6 +69,10 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
     };
   }, [isOpen, startCamera, stopCamera]);
 
+  const handleSwitchCamera = () => {
+    stopCamera();
+    setFacingMode(prevMode => prevMode === 'user' ? 'environment' : 'user');
+  };
 
   const handleCapture = () => {
     if (videoRef.current && canvasRef.current && hasStream) {
@@ -69,6 +82,11 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
       canvas.height = video.videoHeight;
       const context = canvas.getContext('2d');
       if (context) {
+        // Flip the image horizontally if it's the front-facing camera
+        if (facingMode === 'user') {
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1);
+        }
         context.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imageDataUri = canvas.toDataURL('image/png');
         onCapture(imageDataUri);
@@ -92,16 +110,21 @@ export function CameraCaptureModal({ isOpen, onClose, onCapture }: CameraCapture
             </div>
           )}
           <div className="aspect-video bg-muted rounded-md overflow-hidden relative">
-            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+            <video ref={videoRef} autoPlay playsInline className={cn("w-full h-full object-cover", facingMode === 'user' && 'scale-x-[-1]')} />
             {!hasStream && !error && <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">Starting camera...</div>}
           </div>
           <canvas ref={canvasRef} style={{ display: 'none' }} />
         </div>
-        <DialogFooter className="p-6 pt-0">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleCapture} disabled={!hasStream || !!error}>
-            <Camera className="mr-2 h-4 w-4" /> Capture
+        <DialogFooter className="p-6 pt-0 flex-row justify-between">
+          <Button variant="outline" onClick={handleSwitchCamera} disabled={!hasStream}>
+            <RefreshCw className="mr-2 h-4 w-4" /> Switch Camera
           </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button onClick={handleCapture} disabled={!hasStream || !!error}>
+              <Camera className="mr-2 h-4 w-4" /> Capture
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
