@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { AppProviders } from '@/components/app-providers';
 
 export const metadata: Metadata = {
-  title: 'PATOOWORLD OMNI-G1',
+  title: 'Patooworld Omni',
   description: 'OMNI by PATOOWORLD, your advanced conversational Evolving GenAI assistant',
 };
 

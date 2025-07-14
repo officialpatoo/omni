@@ -538,8 +538,8 @@ export default function HomePage() {
               )}
             </div>
           </div>
-          <div className="flex justify-center bg-background border-t">
-            <div className="w-full max-w-4xl p-2 sm:p-4">
+          <div className="flex justify-center bg-background-t">
+            <div className="w-full max-w-2xl p-2 sm:p-4">
               <InputArea
                 onSendMessage={handleSendMessage}
                 isLoading={isAiLoading}
