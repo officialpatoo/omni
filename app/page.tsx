@@ -525,7 +525,7 @@ export default function HomePage() {
             <div className="w-full max-w-6xl flex-1 flex flex-col">
               {messages.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center gap-4 p-4">
-                  <Logo width={180} height={149} priority />
+                  <Logo width={180} height={160} priority />
                 </div>
               ) : (
                 <ChatInterface 
@@ -539,7 +539,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex justify-center bg-background">
-          <div className="w-full max-w-4xl">
+          <div className="w-full max-w-2xl">
               <InputArea
                 onSendMessage={handleSendMessage}
                 isLoading={isAiLoading}
