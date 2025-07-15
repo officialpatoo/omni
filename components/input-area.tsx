@@ -12,12 +12,6 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { cn } from '@/lib/utils';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 
 interface InputAreaProps {
@@ -149,43 +143,46 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                  >
                     {/* Left Icons Group */}
                     <div className="flex items-center gap-1 pt-1">
-                      <DropdownMenu>
                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            <DropdownMenuTrigger asChild>
-                              <Button 
-                                type="button" 
-                                variant="ghost" 
-                                size="icon" 
-                                disabled={anyLoading} 
-                                aria-label="Attach file or use camera"
-                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                              >
-                                <PlusCircle className="h-5 w-5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                          </TooltipTrigger>
-                          <TooltipContent><p>Attach or Use Camera</p></TooltipContent>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={anyLoading}
+                                    aria-label="Attach an image"
+                                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                >
+                                    <Paperclip className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Attach Image</p></TooltipContent>
                         </Tooltip>
-                        <DropdownMenuContent>
-                          <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                            <Paperclip className="mr-2 h-4 w-4" />
-                            <span>Attach Image</span>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={onOpenCamera}>
-                            <Camera className="mr-2 h-4 w-4" />
-                            <span>Use Camera</span>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <input
-                          type="file"
-                          ref={fileInputRef}
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="hidden"
-                          disabled={anyLoading}
-                      />
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="hidden"
+                            disabled={anyLoading}
+                        />
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={onOpenCamera}
+                                    disabled={anyLoading}
+                                    aria-label="Use camera"
+                                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                >
+                                    <Camera className="h-5 w-5" />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Use Camera</p></TooltipContent>
+                        </Tooltip>
                     </div>
 
                     {/* Textarea */}
