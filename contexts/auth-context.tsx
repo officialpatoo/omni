@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Auth, User as FirebaseUser, onAuthStateChanged, signOut as firebaseSignOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { Auth, User as FirebaseUser, onAuthStateChanged, signOut as firebaseSignOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import type { User } from '@/types';
 import { useRouter } from 'next/navigation';
@@ -13,6 +13,7 @@ interface AuthContextType {
   signIn: (email: string, pass: string) => Promise<FirebaseUser | null>;
   signUp: (email: string, pass: string) => Promise<FirebaseUser | null>;
   signOut: () => Promise<void>;
+  resetPassword: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,12 +69,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/auth/login'); // Redirect to login after sign out
   };
 
+  const resetPassword = async () => {
+    if (auth.currentUser?.email) {
+      try {
+        await sendPasswordResetEmail(auth, auth.currentUser.email);
+      } catch (error) {
+        console.error("Password reset error", error);
+        throw error;
+      }
+    } else {
+      throw new Error("No authenticated user with an email found to reset password for.");
+    }
+  };
+
+
   const value = {
     user,
     isLoading,
     signIn,
     signUp,
     signOut,
+    resetPassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -86,3 +102,5 @@ export function useAuth() {
   }
   return context;
 }
+
+    

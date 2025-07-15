@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, ChangeEvent } from 'react';
+import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,14 +13,25 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Edit3, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck, Settings, Sparkles, Zap } from 'lucide-react';
+import { UserCircle, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck, Settings, Sparkles, Zap, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile, AppSettings } from '@/types';
-import { useTheme, type PreferredTheme } from '@/hooks/use-theme'; 
+import { useTheme, type PreferredTheme } from '@/hooks/use-theme';
 import { cn } from '@/lib/utils';
+import { getProfile, saveProfile } from '@/lib/firebase/firestore';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-const LOCAL_STORAGE_PROFILE_KEY_PREFIX = 'patoovision_profile_';
-const LOCAL_STORAGE_APP_SETTINGS_KEY_PREFIX = 'patoovision_app_settings_';
+const LOCAL_STORAGE_APP_SETTINGS_KEY_PREFIX = 'patooworld_app_settings_';
 
 const availableModels = [
   { id: 'googleai/gemini-2.0-flash', name: 'Gemini 2.0 Flash', icon: Zap, description: 'Fast and efficient for most tasks.' },
@@ -28,23 +39,21 @@ const availableModels = [
 ];
 
 export default function ProfilePage() {
-  const { user, isLoading: isLoadingAuth } = useAuth();
+  const { user, isLoading: isLoadingAuth, resetPassword } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   const [_activeTheme, setPreferredThemeGlobal, preferredThemeFromHook] = useTheme();
 
-
   const [profile, setProfile] = useState<UserProfile>({ displayName: '', bio: '' });
   const [appSettings, setAppSettings] = useState<AppSettings>({
     aiModel: 'googleai/gemini-2.0-flash',
-    theme: preferredThemeFromHook, // Initialize with theme from global hook
+    theme: preferredThemeFromHook,
     notificationsEnabled: true,
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [_isSavingSettings, _setIsSavingSettings] = useState(false); // isSavingSettings not used, can be removed if not planned
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-  const getProfileStorageKey = React.useCallback(() => user ? `${LOCAL_STORAGE_PROFILE_KEY_PREFIX}${user.uid}` : null, [user]);
-  const getAppSettingsStorageKey = React.useCallback(() => user ? `${LOCAL_STORAGE_APP_SETTINGS_KEY_PREFIX}${user.uid}` : null, [user]);
+  const getAppSettingsStorageKey = useCallback(() => user ? `${LOCAL_STORAGE_APP_SETTINGS_KEY_PREFIX}${user.uid}` : null, [user]);
 
   useEffect(() => {
     if (!isLoadingAuth && !user) {
@@ -53,12 +62,12 @@ export default function ProfilePage() {
   }, [user, isLoadingAuth, router]);
 
   useEffect(() => {
-    if (user) {
-      const profileKey = getProfileStorageKey();
-      if (profileKey) {
-        const storedProfile = localStorage.getItem(profileKey);
-        if (storedProfile) {
-          setProfile(JSON.parse(storedProfile));
+    async function loadUserProfile() {
+      if (user) {
+        setIsLoadingProfile(true);
+        const userProfile = await getProfile(user.uid);
+        if (userProfile) {
+          setProfile(userProfile);
         } else {
           setProfile({
             displayName: user.displayName || '',
@@ -67,8 +76,14 @@ export default function ProfilePage() {
             email: user.email || ''
           });
         }
+        setIsLoadingProfile(false);
       }
-      
+    }
+    loadUserProfile();
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
       const settingsKey = getAppSettingsStorageKey();
       if (settingsKey) {
         const storedSettingsData = localStorage.getItem(settingsKey);
@@ -77,34 +92,35 @@ export default function ProfilePage() {
           const effectiveThemePreference = parsedSettings.theme || preferredThemeFromHook;
           
           setAppSettings({
-            ...appSettings, // keep defaults for other settings if not in parsedSettings
+            ...appSettings,
             ...parsedSettings,
             theme: effectiveThemePreference
           });
           
           setPreferredThemeGlobal(effectiveThemePreference);
         } else {
-          // No specific app settings stored, ensure local appSettings.theme matches hook's default
            setAppSettings(prev => ({...prev, theme: preferredThemeFromHook }));
         }
       }
     }
-  }, [user, isLoadingAuth, preferredThemeFromHook, setPreferredThemeGlobal, getAppSettingsStorageKey, getProfileStorageKey]);
-
+  }, [user, preferredThemeFromHook, setPreferredThemeGlobal, getAppSettingsStorageKey]);
 
   const handleProfileChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
-  const handleSaveProfile = () => {
-    const profileKey = getProfileStorageKey();
-    if (user && profileKey) {
+  const handleSaveProfile = async () => {
+    if (user) {
       setIsSavingProfile(true);
-      localStorage.setItem(profileKey, JSON.stringify(profile));
-      setTimeout(() => { 
-        setIsSavingProfile(false);
+      try {
+        await saveProfile(user.uid, profile);
         toast({ title: "Profile Updated", description: "Your profile information has been saved." });
-      }, 1000);
+      } catch (error) {
+        console.error("Error saving profile:", error);
+        toast({ title: "Save Error", description: "Could not save your profile.", variant: "destructive" });
+      } finally {
+        setIsSavingProfile(false);
+      }
     }
   };
 
@@ -115,7 +131,7 @@ export default function ProfilePage() {
       if (user && settingsKey) {
         localStorage.setItem(settingsKey, JSON.stringify(newSettings));
         if (key === 'theme') {
-          setPreferredThemeGlobal(value as PreferredTheme); 
+          setPreferredThemeGlobal(value as PreferredTheme);
         }
         if (key === 'aiModel') {
             toast({ title: "AI Model Updated", description: `Default model set to ${availableModels.find(m => m.id === value)?.name}.` });
@@ -124,8 +140,22 @@ export default function ProfilePage() {
       return newSettings;
     });
   };
+  
+  const handlePasswordReset = async () => {
+    if (!user || !user.email) {
+        toast({ title: "Error", description: "No email address found for your account.", variant: "destructive" });
+        return;
+    }
+    try {
+        await resetPassword();
+        toast({ title: "Password Reset Email Sent", description: `An email has been sent to ${user.email} with instructions to reset your password.` });
+    } catch(error: any) {
+        console.error("Password reset error:", error);
+        toast({ title: "Password Reset Failed", description: error.message, variant: "destructive" });
+    }
+  }
 
-  if (isLoadingAuth || !user) {
+  if (isLoadingAuth || !user || isLoadingProfile) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -152,7 +182,7 @@ export default function ProfilePage() {
           <CardContent className="space-y-6">
             <div className="flex items-center space-x-4">
               <Avatar className="h-20 w-20">
-                <AvatarImage src={user.photoURL || undefined} alt={profile.displayName || user.email || "User"} data-ai-hint="profile avatar"/>
+                <AvatarImage src={profile.photoURL || user.photoURL || undefined} alt={profile.displayName || user.email || "User"} data-ai-hint="profile avatar"/>
                 <AvatarFallback className="text-2xl">
                     {profile.displayName ? profile.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : <UserCircle/>)}
                 </AvatarFallback>
@@ -166,23 +196,23 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="displayName">Display Name</Label>
-                <Input 
-                  id="displayName" 
+                <Input
+                  id="displayName"
                   name="displayName"
-                  value={profile.displayName || ''} 
-                  onChange={handleProfileChange} 
+                  value={profile.displayName || ''}
+                  onChange={handleProfileChange}
                   placeholder="Your Name"
                 />
               </div>
                <div className="space-y-2 sm:col-span-2">
                 <Label htmlFor="bio">Bio</Label>
-                <Textarea 
-                  id="bio" 
+                <Textarea
+                  id="bio"
                   name="bio"
-                  value={profile.bio || ''} 
-                  onChange={handleProfileChange} 
-                  placeholder="Tell us a little about yourself" 
-                  rows={3} 
+                  value={profile.bio || ''}
+                  onChange={handleProfileChange}
+                  placeholder="Tell us a little about yourself"
+                  rows={3}
                 />
               </div>
             </div>
@@ -263,6 +293,38 @@ export default function ProfilePage() {
         </Card>
 
         <Separator />
+
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center text-xl">
+              <ShieldCheck className="mr-3 h-6 w-6 text-primary" />
+              Security
+            </CardTitle>
+            <CardDescription>Manage your account security settings.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">Change Password</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Change Password?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    We will send a password reset link to your email address: <strong>{user.email}</strong>. Please check your inbox to proceed.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handlePasswordReset}>
+                    <Mail className="mr-2 h-4 w-4" /> Send Reset Link
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <p className="text-xs text-muted-foreground pt-2">Two-factor authentication is planned for future updates.</p>
+          </CardContent>
+        </Card>
         
         <Card className="shadow-lg">
           <CardHeader>
@@ -284,21 +346,9 @@ export default function ProfilePage() {
              <p className="text-xs text-muted-foreground pt-2">Subscription management is not yet implemented.</p>
           </CardContent>
         </Card>
-
-         <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center text-xl">
-              <ShieldCheck className="mr-3 h-6 w-6 text-primary" />
-              Security
-            </CardTitle>
-            <CardDescription>Manage your account security settings.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button variant="outline" disabled>Change Password</Button>
-            <p className="text-xs text-muted-foreground pt-2">Advanced security features are planned for future updates.</p>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
 }
+
+    
