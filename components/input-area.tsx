@@ -12,6 +12,12 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { cn } from '@/lib/utils';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 
 interface InputAreaProps {
@@ -115,12 +121,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
   return (
     <TooltipProvider>
        <div 
-        className="w-full flex flex-col gap-2 p-2 rounded-3xl border"
-        style={{ 
-          backgroundColor: 'hsl(var(--input-area-background))', 
-          color: 'hsl(var(--input-area-foreground))',
-          borderColor: 'hsl(var(--border))' 
-        }}
+        className="w-full flex flex-col gap-2 p-2 rounded-3xl border bg-input-area-background text-input-area-foreground"
       >
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-2">
             {imagePreview && (
@@ -143,22 +144,31 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                  >
                     {/* Left Icons Group */}
                     <div className="flex items-center gap-1 pt-1">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                                 <Button
                                     type="button"
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => fileInputRef.current?.click()}
                                     disabled={anyLoading}
-                                    aria-label="Attach an image"
+                                    aria-label="Attach file or use camera"
                                     className="h-7 w-7 text-muted-foreground hover:text-foreground"
                                 >
-                                    <Paperclip className="h-5 w-5" />
+                                    <PlusCircle className="h-5 w-5" />
                                 </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Attach Image</p></TooltipContent>
-                        </Tooltip>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                                    <Paperclip className="mr-2 h-4 w-4" />
+                                    <span>Attach Image</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={onOpenCamera}>
+                                    <Camera className="mr-2 h-4 w-4" />
+                                    <span>Use Camera</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+
                         <input
                             type="file"
                             ref={fileInputRef}
@@ -167,22 +177,6 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                             className="hidden"
                             disabled={anyLoading}
                         />
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={onOpenCamera}
-                                    disabled={anyLoading}
-                                    aria-label="Use camera"
-                                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                                >
-                                    <Camera className="h-5 w-5" />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Use Camera</p></TooltipContent>
-                        </Tooltip>
                     </div>
 
                     {/* Textarea */}
@@ -236,7 +230,6 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                 <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('rephrase')} disabled={anyLoading || !text.trim()}><RefreshCcw className="mr-1 h-3 w-3" /> Rephrase</Button>
                 <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('translate')} disabled={anyLoading || !text.trim()}><Languages className="mr-1 h-3 w-3" /> Translate</Button>
                 <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('expand')} disabled={anyLoading || !text.trim()}><Expand className="mr-1 h-3 w-3" /> Expand</Button>
-                <Button variant="outline" size="sm" className="rounded-full text-xs" disabled><PlusCircle className="mr-1 h-3 w-3" /> More</Button>
             </div>
         </form>
          <div className="flex items-center justify-center sm:justify-end space-x-2 -mt-2 -mr-1">

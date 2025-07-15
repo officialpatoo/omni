@@ -6,7 +6,7 @@ import { Message, AiAction } from '@/types';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { User, Copy, Share2, Loader2, RefreshCcw, Languages, Expand, Lightbulb, Volume2, Square } from 'lucide-react';
+import { User, Copy, Share2, Loader2, RefreshCcw, Languages, Expand, Lightbulb, Volume2, Square, PlusCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,

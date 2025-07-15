@@ -538,7 +538,7 @@ export default function HomePage() {
               )}
             </div>
           </div>
-          <div className="flex justify-center bg-background-t">
+          <div className="flex justify-center bg-background">
             <div className="w-full max-w-3xl p-2 sm:p-4">
               <InputArea
                 onSendMessage={handleSendMessage}
