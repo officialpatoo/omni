@@ -13,13 +13,19 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Edit3, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck, Settings } from 'lucide-react';
+import { UserCircle, Edit3, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck, Settings, Sparkles, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile, AppSettings } from '@/types';
 import { useTheme, type PreferredTheme } from '@/hooks/use-theme'; 
+import { cn } from '@/lib/utils';
 
 const LOCAL_STORAGE_PROFILE_KEY_PREFIX = 'patoovision_profile_';
 const LOCAL_STORAGE_APP_SETTINGS_KEY_PREFIX = 'patoovision_app_settings_';
+
+const availableModels = [
+  { id: 'googleai/gemini-2.0-flash', name: 'Gemini 2.0 Flash', icon: Zap, description: 'Fast and efficient for most tasks.' },
+  { id: 'googleai/gemini-2.5-flash', name: 'Gemini 2.5 Flash', icon: Sparkles, description: 'More capable for complex reasoning.' }
+];
 
 export default function ProfilePage() {
   const { user, isLoading: isLoadingAuth } = useAuth();
@@ -111,6 +117,9 @@ export default function ProfilePage() {
         if (key === 'theme') {
           setPreferredThemeGlobal(value as PreferredTheme); 
         }
+        if (key === 'aiModel') {
+            toast({ title: "AI Model Updated", description: `Default model set to ${availableModels.find(m => m.id === value)?.name}.` });
+        }
       }
       return newSettings;
     });
@@ -197,20 +206,27 @@ export default function ProfilePage() {
             <CardDescription>Customize your experience within the application.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="aiModel" className="flex items-center"><Cpu className="mr-2 h-4 w-4 text-muted-foreground" /> AI Model</Label>
-              <Select 
-                value={appSettings.aiModel} 
-                onValueChange={(value) => handleSettingsChange('aiModel', value)}
-              >
-                <SelectTrigger id="aiModel" className="w-full sm:w-[280px]">
-                  <SelectValue placeholder="Select AI Model" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="googleai/gemini-2.0-flash">Gemini 2.0 Flash (Default)</SelectItem>
-                  <SelectItem value="googleai/gemini-pro">Gemini Pro</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <Label className="flex items-center"><Cpu className="mr-2 h-4 w-4 text-muted-foreground" /> AI Model</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {availableModels.map((model) => (
+                    <Button
+                        key={model.id}
+                        variant="outline"
+                        className={cn(
+                            "h-auto justify-start p-4 text-left",
+                            appSettings.aiModel === model.id && "border-primary ring-2 ring-primary"
+                        )}
+                        onClick={() => handleSettingsChange('aiModel', model.id)}
+                    >
+                        <model.icon className="mr-4 h-6 w-6 shrink-0 text-primary" />
+                        <div className="flex flex-col">
+                            <span className="font-semibold text-foreground">{model.name}</span>
+                            <span className="text-xs text-muted-foreground">{model.description}</span>
+                        </div>
+                    </Button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-2">

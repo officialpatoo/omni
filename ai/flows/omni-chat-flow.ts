@@ -17,7 +17,7 @@ const OmniChatInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      'The AI model to use (e.g., gemini-1.5-flash, gemini-2.0-flash). Defaults to the one configured in genkit.ts.',
+      'The AI model to use (e.g., gemini-2.0-flash, gemini-2.5-flash). Defaults to the one configured in genkit.ts.',
     ),
   imageDataUri: z
     .string()
@@ -84,11 +84,12 @@ export async function invokeOmniChat(
       promptMessage.push({ text: flowInput.prompt });
 
       // Determine the model to use. Fallback to default if input.model is not provided or invalid.
-      const validModels = ['gemini-1.5-flash', 'gemini-2.0-flash'];
+      const validModels = ['gemini-2.0-flash', 'gemini-2.5-flash'];
       const modelToUse =
-        flowInput.model && validModels.includes(flowInput.model)
-          ? `googleai/${flowInput.model}`
-          : 'googleai/gemini-1.5-flash';
+        flowInput.model && validModels.includes(flowInput.model.replace('googleai/', ''))
+          ? `googleai/${flowInput.model.replace('googleai/', '')}`
+          : 'googleai/gemini-2.0-flash';
+
 
       console.log(`Using model: ${modelToUse}`);
       console.log(`Search tool enabled: ${flowInput.useRealtimeSearch}`);
