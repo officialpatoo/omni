@@ -97,7 +97,7 @@ export function ChatMessageItem({ message, onAction, audioState, onStopPlayback 
       <div
         className={cn(
           "max-w-[85%] sm:max-w-[75%] rounded-lg p-3 shadow-md",
-          isUser ? "bg-primary text-primary-foreground" : "bg-card text-card-foreground border"
+          isUser ? "bg-secondary text-secondary-foreground" : "bg-card text-card-foreground border"
         )}
       >
         {message.isLoading ? (
@@ -174,7 +174,7 @@ export function ChatMessageItem({ message, onAction, audioState, onStopPlayback 
         )}
         <p className={cn(
             "text-xs mt-1",
-            isUser ? "text-primary-foreground/70" : "text-muted-foreground"
+            isUser ? "text-secondary-foreground/70" : "text-muted-foreground"
           )}>
             {message.timestamp.toLocaleTimeString()}
           </p>
