@@ -38,7 +38,7 @@ const OmniChatOutputSchema = z.object({
   suggestions: z
     .array(z.string())
     .optional()
-    .describe('AI-suggested follow-up prompts or actions.'),
+    .describe('A few brief, relevant follow-up questions or suggestions for the user. These should be concise and directly related to the conversation topic.'),
 });
 export type OmniChatOutput = z.infer<typeof OmniChatOutputSchema>;
 
@@ -61,7 +61,7 @@ export async function invokeOmniChat(
         role: string;
         text: string;
       } | { media: { url: string } })[] = [];
-      let systemPromptText = 'You are OMNI, a helpful assistant.';
+      let systemPromptText = 'You are OMNI, a helpful assistant. After your main response, provide a few brief, relevant follow-up questions or actions as suggestions for the user. These should be concise and directly related to the conversation topic.';
 
       if (flowInput.useRealtimeSearch) {
         systemPromptText +=
@@ -83,7 +83,6 @@ export async function invokeOmniChat(
 
       promptMessage.push({ text: flowInput.prompt });
 
-      // Determine the model to use. Fallback to default if input.model is not provided or invalid.
       const validModels = ['gemini-2.0-flash', 'gemini-2.5-flash'];
       const modelToUse =
         flowInput.model && validModels.includes(flowInput.model.replace('googleai/', ''))
@@ -98,6 +97,9 @@ export async function invokeOmniChat(
         model: modelToUse as any,
         prompt: promptMessage,
         tools: flowInput.useRealtimeSearch ? [searchTool] : [],
+        output: {
+            schema: OmniChatOutputSchema
+        },
         config: {
           safetySettings: [
             {
@@ -119,11 +121,12 @@ export async function invokeOmniChat(
           ],
         },
       });
-      // TODO: Implement suggestion generation based on llmResponse.
-      // For now, returning empty suggestions.
+
+      const output = llmResponse.output || { responseText: llmResponse.text, suggestions: [] };
+
       return {
-        responseText: llmResponse.text,
-        suggestions: [],
+        responseText: output.responseText,
+        suggestions: output.suggestions,
       };
     },
   );

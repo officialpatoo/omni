@@ -8,6 +8,7 @@ export interface Message {
   isLoading?: boolean;
   error?: string;
   timestamp: Date;
+  suggestions?: string[];
 }
 
 export interface ChatSession {
@@ -35,7 +36,7 @@ export interface AppSettings {
   notificationsEnabled?: boolean;
 }
 
-export type AiAction = 'rephrase' | 'translate' | 'expand' | 'improve_prompt' | 'read_aloud';
+export type AiAction = 'rephrase' | 'translate' | 'expand' | 'improve_prompt' | 'read_aloud' | 'send_suggestion';
 
 // Represents the input to the content generation flow
 export interface GenerateContentInput {

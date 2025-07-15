@@ -244,7 +244,11 @@ export default function HomePage() {
 
       } else { // Text generation
         const aiResponse = await invokeOmniChat({ prompt: text, useRealtimeSearch });
-        updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.responseText, isLoading: false });
+        updateMessageInCurrentChat(assistantMessageId, { 
+            text: aiResponse.responseText, 
+            suggestions: aiResponse.suggestions,
+            isLoading: false 
+        });
       }
     } catch (error) {
       console.error('AI Error:', error);
@@ -296,6 +300,12 @@ export default function HomePage() {
       toast({ title: "AI is busy", description: "Please wait for the current response to finish.", variant: "default" });
       return;
     }
+    
+    if (action === 'send_suggestion') {
+      await handleSendMessage(context.suggestion, { useRealtimeSearch: false });
+      return;
+    }
+    
     const aiMessageIndex = messages.findIndex(m => m.id === messageId);
     const aiMessage = messages[aiMessageIndex];
 
@@ -366,7 +376,7 @@ export default function HomePage() {
       setIsAiLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAiLoading, messages, toast, handleStopPlayback, audioState]);
+  }, [isAiLoading, messages, toast, handleStopPlayback, audioState, handleSendMessage]);
 
   const handleInputAction = useCallback(async (currentText: string, action: 'rephrase' | 'translate' | 'expand'): Promise<string> => {
       if (isAiLoading) {

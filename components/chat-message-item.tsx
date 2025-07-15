@@ -126,6 +126,23 @@ export function ChatMessageItem({ message, onAction, audioState, onStopPlayback 
                 {renderedText}
               </ReactMarkdown>
             </article>
+             {/* Suggestions Area */}
+            {!isUser && message.suggestions && message.suggestions.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-border/50">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Suggestions</p>
+                    <div className="flex flex-wrap gap-2">
+                        {message.suggestions.map((suggestion, index) => (
+                            <button
+                                key={index}
+                                onClick={() => onAction(message.id, 'send_suggestion', { suggestion })}
+                                className="px-3 py-1 text-xs bg-accent hover:bg-accent/80 text-accent-foreground rounded-full transition-colors"
+                            >
+                                {suggestion}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
             {!isUser && message.text && (
               <div className="mt-2 flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
                  <Button variant="ghost" size="sm" onClick={handleReadAloudClick} className="text-xs h-7 px-2">
