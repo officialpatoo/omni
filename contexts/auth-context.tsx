@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Auth, User as FirebaseUser, onAuthStateChanged, signOut as firebaseSignOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { Auth, User as FirebaseUser, onAuthStateChanged, signOut as firebaseSignOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, GithubAuthProvider, FacebookAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import type { User } from '@/types';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,9 @@ interface AuthContextType {
   signUp: (email: string, pass: string) => Promise<FirebaseUser | null>;
   signOut: () => Promise<void>;
   resetPassword: () => Promise<void>;
+  signInWithGoogle: () => Promise<FirebaseUser | null>;
+  signInWithGitHub: () => Promise<FirebaseUser | null>;
+  signInWithFacebook: () => Promise<FirebaseUser | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -61,6 +64,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const socialSignIn = async (provider: GoogleAuthProvider | GithubAuthProvider | FacebookAuthProvider): Promise<FirebaseUser | null> => {
+    try {
+        const result = await signInWithPopup(auth, provider);
+        return result.user;
+    } catch (error) {
+        console.error("Social sign in error", error);
+        throw error;
+    }
+  };
+
+  const signInWithGoogle = () => socialSignIn(new GoogleAuthProvider());
+  const signInWithGitHub = () => socialSignIn(new GithubAuthProvider());
+  const signInWithFacebook = () => socialSignIn(new FacebookAuthProvider());
+
   const signOut = async () => {
     setIsLoading(true);
     await firebaseSignOut(auth);
@@ -90,6 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signOut,
     resetPassword,
+    signInWithGoogle,
+    signInWithGitHub,
+    signInWithFacebook,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -102,5 +122,3 @@ export function useAuth() {
   }
   return context;
 }
-
-    
