@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview OMNI conversational flow.
@@ -70,6 +71,10 @@ export async function invokeOmniChat(
           ' Incorporate the search results into your answer. Clearly indicate when you are using the search tool.';
         systemPromptText +=
           " When providing weather or climate information obtained from the searchTool, try to present it in a structured, matrix-like format if possible, for example, using a Markdown table for key details like Temperature, Humidity, Wind, Conditions, and a brief forecast if available. If a table isn't suitable, use clear bullet points for each piece of information.";
+      }
+      
+       if (flowInput.imageDataUri) {
+         systemPromptText += "\nThe user has provided an image. Your primary task is to analyze the image in conjunction with the text prompt. Do not use tools unless the user explicitly asks for external information related to the image."
       }
 
       promptMessage.push({

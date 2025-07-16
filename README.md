@@ -9,6 +9,7 @@ Welcome to OMNI, a modern, full-stack web application that showcases the power o
 ## ✨ Core Features
 
 - **AI-Powered Chat**: Engage in contextual conversations with an AI assistant powered by Gemini.
+- **Live Web Search**: The AI can perform real-time web searches using the Tavily API to answer questions about current events and provide up-to-date information.
 - **Image Analysis**: Upload or capture an image and ask questions about its content.
 - **Image Generation**: Create unique images from text prompts using the `/imagine` command.
 - **Interactive AI Tools**:
@@ -16,7 +17,7 @@ Welcome to OMNI, a modern, full-stack web application that showcases the power o
     - **Translate**: Instantly translate responses to other languages (e.g., Spanish).
     - **Expand**: Elaborate on ideas and get more detailed explanations.
     - **Improve Prompt**: Get suggestions on how to refine your prompts for better AI responses.
-- **User Authentication**: Secure sign-up and login functionality using Firebase Authentication.
+- **User Authentication**: Secure sign-up and login functionality using Firebase Authentication, including Google, GitHub, and Facebook providers.
 - **Persistent Chat History**: Your conversations are saved locally, allowing you to resume them at any time. Manage your chats with options to rename or delete sessions.
 - **Profile & Settings Management**: A dedicated page to manage your user profile and application preferences, including theme selection (light/dark/system).
 - **Responsive Design**: A clean, modern UI built with Tailwind CSS and ShadCN UI that looks great on both desktop and mobile devices.
@@ -28,6 +29,7 @@ Welcome to OMNI, a modern, full-stack web application that showcases the power o
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Component Library**: [ShadCN UI](https://ui.shadcn.com/)
 - **AI Integration**: [Genkit](https://firebase.google.com/docs/genkit) with [Google's Gemini Models](https://ai.google.dev/)
+- **Live Search**: [Tavily Search API](https://tavily.com/)
 - **Authentication**: [Firebase Authentication](https://firebase.google.com/docs/auth)
 - **Icons**: [Lucide React](https://lucide.dev/)
 
@@ -42,10 +44,13 @@ To get this project running on your local machine, follow these steps.
 
 ### 1. Set Up Environment Variables
 
-You need to configure your Firebase and Gemini API keys.
+You need to configure your Firebase, Gemini, and Tavily API keys.
 
 1.  Create a new file named `.env` in the root of the project.
-2.  Add your Firebase project configuration and your Gemini API key to the `.env` file. You can get your Firebase config from the Firebase console (`Project settings > General > Your apps > Web app`). You can get a Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+2.  Add your Firebase project configuration, your Gemini API key, and your Tavily API key to the `.env` file. 
+    - You can get your Firebase config from the Firebase console (`Project settings > General > Your apps > Web app`). 
+    - You can get a Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+    - You can get a free Tavily API key from the [Tavily website](https://tavily.com/).
 
 ```.env
 # Firebase Configuration
@@ -58,6 +63,9 @@ NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
 
 # Gemini API Key
 GEMINI_API_KEY=your_gemini_api_key
+
+# Tavily Search API Key
+TAVILY_API_KEY=your_tavily_api_key
 ```
 
 ### 2. Install Dependencies
