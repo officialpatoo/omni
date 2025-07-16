@@ -149,6 +149,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
     }
   }
 
+  const showSendButton = !anyLoading && (!!text.trim() || !!imageFile || (mode === 'imagine' && !!text.trim()));
 
   return (
     <TooltipProvider>
@@ -255,18 +256,21 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                         </TooltipTrigger>
                         <TooltipContent><p>{isListening ? "Stop Listening" : (speechSupported ? "Voice Input" : "Voice Not Supported")}</p></TooltipContent>
                     </Tooltip>
+                     <Button 
+                        type="submit" 
+                        variant="ghost"
+                        size="icon" 
+                        disabled={anyLoading || (!text.trim() && !imageFile && mode !== 'imagine')} 
+                        aria-label="Send message"
+                        className={cn(
+                            "h-7 w-7 text-muted-foreground hover:text-foreground",
+                            showSendButton ? "opacity-100" : "opacity-0"
+                        )}
+                    >
+                         {anyLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
+                    </Button>
                     </div>
                 </div>
-
-                <Button 
-                    type="submit" 
-                    size="icon" 
-                    disabled={anyLoading || (!text.trim() && !imageFile && mode !== 'imagine')} 
-                    aria-label="Send message"
-                    className="h-12 w-12 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full flex-shrink-0"
-                >
-                    {anyLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Send className="h-6 w-6" />}
-                </Button>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
                 {mode === 'chat' && (

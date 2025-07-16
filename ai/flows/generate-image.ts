@@ -37,7 +37,7 @@ export async function generateImage(
     },
     async (flowInput) => {
       const { media } = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-preview-image-generation',
+        model: 'googleai/gemini-2.0-flash-exp',
         prompt: flowInput.prompt,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],

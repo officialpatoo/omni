@@ -43,7 +43,7 @@ export async function editImage(
     },
     async (flowInput) => {
       const { media } = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-preview-image-generation',
+        model: 'googleai/gemini-2.0-flash',
         prompt: [
             { media: { url: flowInput.imageDataUri } },
             { text: flowInput.prompt }

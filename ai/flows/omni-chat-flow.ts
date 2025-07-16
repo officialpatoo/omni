@@ -18,7 +18,7 @@ const OmniChatInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      'The AI model to use (e.g., gemini-2.0-flash, gemini-2.5-flash). Defaults to the one configured in genkit.ts.',
+      'The AI model to use (e.g., gemini-2.0-flash). Defaults to the one configured in genkit.ts.',
     ),
   imageDataUri: z
     .string()
