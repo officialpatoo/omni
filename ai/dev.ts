@@ -1,3 +1,4 @@
+
 'use server';
 import { config } from 'dotenv';
 config();
@@ -11,3 +12,5 @@ import '@/ai/flows/translate-text';
 import '@/ai/flows/expand-idea';
 import '@/ai/flows/improve-prompt';
 import '@/ai/flows/text-to-speech';
+import '@/ai/flows/edit-image';
+

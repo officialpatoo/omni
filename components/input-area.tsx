@@ -5,7 +5,7 @@ import React, { useState, useRef, ChangeEvent, FormEvent, useEffect } from 'reac
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Paperclip, Mic, Send, Camera, XCircle, Loader2, Search, RefreshCcw, Languages, Expand, PlusCircle } from 'lucide-react';
+import { Paperclip, Mic, Send, Camera, XCircle, Loader2, Search, RefreshCcw, Languages, Expand, PlusCircle, Image as ImageIcon, Pencil } from 'lucide-react';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
@@ -21,7 +21,7 @@ import {
 
 
 interface InputAreaProps {
-  onSendMessage: (text: string, options: { imageFile?: File, useRealtimeSearch?: boolean }) => void;
+  onSendMessage: (text: string, options: { imageFile?: File, useRealtimeSearch?: boolean, mode?: 'chat' | 'imagine' | 'edit' }) => void;
   isLoading: boolean;
   onOpenCamera: () => void;
   onInputAction: (currentText: string, action: 'rephrase' | 'translate' | 'expand') => Promise<string>;
@@ -33,6 +33,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [useRealtimeSearch, setUseRealtimeSearch] = useState(false);
   const [isInputLoading, setIsInputLoading] = useState(false);
+  const [mode, setMode] = useState<'chat' | 'imagine' | 'edit'>('chat');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -56,6 +57,12 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
       toast({ title: "Speech Recognition Error", description: speechError, variant: "destructive" });
     }
   }, [speechError, toast]);
+  
+  useEffect(() => {
+    if (!imageFile) {
+      setMode('chat');
+    }
+  }, [imageFile]);
 
   const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -65,6 +72,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
         return;
       }
       setImageFile(file);
+      setMode('chat'); // Default to chat mode when image is uploaded
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -83,10 +91,12 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!text.trim() && !imageFile) return;
-    onSendMessage(text, { imageFile: imageFile || undefined, useRealtimeSearch });
+    if (isLoading || isInputLoading) return;
+    if (!text.trim() && !imageFile && mode !== 'imagine') return;
+    onSendMessage(text, { imageFile: imageFile || undefined, useRealtimeSearch, mode });
     setText('');
     handleRemoveImage(); // Clear image after sending
+    setMode('chat'); // Reset mode
     if (isListening) {
       stopListening();
     }
@@ -115,8 +125,30 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
       startListening();
     }
   };
+  
+  const handleImagineClick = () => {
+    setMode('imagine');
+    handleRemoveImage();
+    toast({ title: "Imagine Mode", description: "Type a prompt to generate an image."});
+  }
+  
+  const handleEditClick = () => {
+    setMode('edit');
+    toast({ title: "Edit Mode", description: "Describe the changes you want to make to the image."});
+  }
+
 
   const anyLoading = isLoading || isInputLoading;
+  
+  const getPlaceholderText = () => {
+    if (isListening) return "Listening...";
+    switch(mode) {
+      case 'imagine': return "Describe the image you want to create...";
+      case 'edit': return "Describe the edits for the image...";
+      default: return "Type your message to Omni...";
+    }
+  }
+
 
   return (
     <TooltipProvider>
@@ -166,6 +198,16 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                                     <Camera className="mr-2 h-4 w-4" />
                                     <span>Use Camera</span>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={handleImagineClick}>
+                                    <ImageIcon className="mr-2 h-4 w-4" />
+                                    <span>Imagine</span>
+                                </DropdownMenuItem>
+                                {imageFile && (
+                                    <DropdownMenuItem onClick={handleEditClick}>
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        <span>Edit Image</span>
+                                    </DropdownMenuItem>
+                                )}
                             </DropdownMenuContent>
                         </DropdownMenu>
 
@@ -183,7 +225,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                     <Textarea
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder={isListening ? "Listening..." : "Type your message to Omni..."}
+                    placeholder={getPlaceholderText()}
                     className="flex-1 resize-none bg-transparent border-0 focus:ring-0 p-0 self-center min-h-[28px] max-h-[120px] text-base"
                     rows={1}
                     onKeyDown={(e) => {
@@ -219,7 +261,7 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                 <Button 
                     type="submit" 
                     size="icon" 
-                    disabled={anyLoading || (!text.trim() && !imageFile)} 
+                    disabled={anyLoading || (!text.trim() && !imageFile && mode !== 'imagine')} 
                     aria-label="Send message"
                     className="h-12 w-12 bg-primary text-primary-foreground hover:bg-primary/90 rounded-full flex-shrink-0"
                 >
@@ -227,9 +269,28 @@ export function InputArea({ onSendMessage, isLoading, onOpenCamera, onInputActio
                 </Button>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-                <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('rephrase')} disabled={anyLoading || !text.trim()}><RefreshCcw className="mr-1 h-3 w-3" /> Rephrase</Button>
-                <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('translate')} disabled={anyLoading || !text.trim()}><Languages className="mr-1 h-3 w-3" /> Translate</Button>
-                <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('expand')} disabled={anyLoading || !text.trim()}><Expand className="mr-1 h-3 w-3" /> Expand</Button>
+                {mode === 'chat' && (
+                    <>
+                        <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('rephrase')} disabled={anyLoading || !text.trim()}><RefreshCcw className="mr-1 h-3 w-3" /> Rephrase</Button>
+                        <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('translate')} disabled={anyLoading || !text.trim()}><Languages className="mr-1 h-3 w-3" /> Translate</Button>
+                        <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => handleActionButtonClick('expand')} disabled={anyLoading || !text.trim()}><Expand className="mr-1 h-3 w-3" /> Expand</Button>
+                    </>
+                )}
+                 {imageFile && mode !== 'edit' && (
+                  <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={handleEditClick} disabled={anyLoading}>
+                    <Pencil className="mr-1 h-3 w-3" /> Edit Image
+                  </Button>
+                )}
+                 {mode === 'imagine' && (
+                  <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => setMode('chat')} disabled={anyLoading}>
+                    Cancel Imagine
+                  </Button>
+                )}
+                {mode === 'edit' && (
+                  <Button variant="outline" size="sm" className="rounded-full text-xs" onClick={() => setMode('chat')} disabled={anyLoading}>
+                    Cancel Edit
+                  </Button>
+                )}
             </div>
         </form>
          <div className="flex items-center justify-center sm:justify-end space-x-2 -mt-2 -mr-1">

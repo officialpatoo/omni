@@ -7,6 +7,7 @@ import type { Message, ChatSession, AiAction } from '@/types';
 import { analyzeImageQuery } from '@/ai/flows/analyze-image-query';
 import { invokeOmniChat } from '@/ai/flows/omni-chat-flow';
 import { generateImage } from '@/ai/flows/generate-image';
+import { editImage } from '@/ai/flows/edit-image';
 import { rephraseText } from '@/ai/flows/rephrase-text';
 import { translateText } from '@/ai/flows/translate-text';
 import { expandIdea } from '@/ai/flows/expand-idea';
@@ -191,8 +192,8 @@ export default function HomePage() {
   }, [audioState.audio]);
 
 
-  const handleSendMessage = useCallback(async (text: string, options: { imageFile?: File, useRealtimeSearch?: boolean }) => {
-    const { imageFile, useRealtimeSearch } = options;
+  const handleSendMessage = useCallback(async (text: string, options: { imageFile?: File, useRealtimeSearch?: boolean, mode?: 'chat' | 'imagine' | 'edit' }) => {
+    const { imageFile, useRealtimeSearch, mode = 'chat' } = options;
     
     if (!currentChatId) {
       toast({ title: "Error", description: "No active chat session.", variant: "destructive" });
@@ -220,17 +221,10 @@ export default function HomePage() {
     const assistantMessageId = addMessageToCurrentChat({ role: 'assistant', text: '', isLoading: true });
     
     try {
-      if (imageUrl) { // Image analysis
-        const aiResponse = await analyzeImageQuery({ photoDataUri: imageUrl, query: text || "Describe this image." });
-        updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.answer, isLoading: false });
-      } else if (text.toLowerCase().startsWith('/imagine ')) { // Image Generation
-        const imagePrompt = text.substring('/imagine '.length).trim();
-        if (!imagePrompt) {
-            updateMessageInCurrentChat(assistantMessageId, { 
-                text: 'Please provide a description for the image you want to generate. Usage: /imagine a cat wearing a hat', 
-                error: "Empty prompt.", 
-                isLoading: false 
-            });
+      if (mode === 'imagine') {
+        const imagePrompt = text.trim();
+         if (!imagePrompt) {
+            updateMessageInCurrentChat(assistantMessageId, { text: 'Please provide a description for the image you want to generate.', error: "Empty prompt.", isLoading: false });
             setIsAiLoading(false);
             return;
         }
@@ -242,6 +236,25 @@ export default function HomePage() {
             isLoading: false,
         });
 
+      } else if (mode === 'edit' && imageUrl) {
+         const editPrompt = text.trim();
+         if (!editPrompt) {
+            updateMessageInCurrentChat(assistantMessageId, { text: 'Please provide a description of the edits you want to make.', error: "Empty prompt.", isLoading: false });
+            setIsAiLoading(false);
+            return;
+        }
+        updateMessageInCurrentChat(assistantMessageId, { text: `Editing image with prompt: "${editPrompt}"...`, isLoading: true });
+        const aiResponse = await editImage({ imageDataUri: imageUrl, prompt: editPrompt });
+        updateMessageInCurrentChat(assistantMessageId, {
+            text: `Here's the edited image:`,
+            imageUrl: aiResponse.imageDataUri,
+            isLoading: false,
+        });
+
+      } else if (imageUrl && mode === 'chat') { // Image analysis
+        const aiResponse = await analyzeImageQuery({ photoDataUri: imageUrl, query: text || "Describe this image." });
+        updateMessageInCurrentChat(assistantMessageId, { text: aiResponse.answer, isLoading: false });
+      
       } else { // Text generation
         const aiResponse = await invokeOmniChat({ prompt: text, useRealtimeSearch });
         updateMessageInCurrentChat(assistantMessageId, { 
