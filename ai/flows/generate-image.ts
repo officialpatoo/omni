@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow for generating images from a text prompt.
@@ -37,7 +38,7 @@ export async function generateImage(
     },
     async (flowInput) => {
       const { media } = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-exp',
+        model: 'googleai/gemini-2.0-flash-preview-image-generation',
         prompt: flowInput.prompt,
         config: {
           responseModalities: ['TEXT', 'IMAGE'],
