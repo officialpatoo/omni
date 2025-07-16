@@ -505,10 +505,7 @@ export default function HomePage() {
   const disclaimer = (
     <div className="px-4 pb-2 text-center text-xs text-muted-foreground">
       <p>
-        Omni can make mistakes. Consider checking important information.
-        <Link href="#" className="underline ml-1">
-          Learn More
-        </Link>
+        Omni is powered by Google Gemini API, and can sometimes make mistakes. Consider checking important information.
       </p>
     </div>
   );
