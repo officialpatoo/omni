@@ -9,7 +9,7 @@
  * - SummarizeInformationOutput - The return type for the summarizeInformation function.
  */
 
-import {getAi} from '@/ai/genkit';
+import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const SummarizeInformationInputSchema = z.object({
@@ -24,29 +24,27 @@ const SummarizeInformationOutputSchema = z.object({
 
 export type SummarizeInformationOutput = z.infer<typeof SummarizeInformationOutputSchema>;
 
-export async function summarizeInformation(input: SummarizeInformationInput): Promise<SummarizeInformationOutput> {
-  const ai = getAi();
-
-  const summarizeInformationPrompt = ai.definePrompt({
-    name: 'summarizeInformationPrompt',
-    input: {schema: SummarizeInformationInputSchema},
-    output: {schema: SummarizeInformationOutputSchema},
-    prompt: `Summarize the following text:
+const summarizeInformationPrompt = ai.definePrompt({
+  name: 'summarizeInformationPrompt',
+  input: {schema: SummarizeInformationInputSchema},
+  output: {schema: SummarizeInformationOutputSchema},
+  prompt: `Summarize the following text:
 
 {{{text}}}`,
-  });
+});
 
-  const summarizeInformationFlow = ai.defineFlow(
-    {
-      name: 'summarizeInformationFlow',
-      inputSchema: SummarizeInformationInputSchema,
-      outputSchema: SummarizeInformationOutputSchema,
-    },
-    async (flowInput) => {
-      const {output} = await summarizeInformationPrompt(flowInput);
-      return output!;
-    }
-  );
-  
+const summarizeInformationFlow = ai.defineFlow(
+  {
+    name: 'summarizeInformationFlow',
+    inputSchema: SummarizeInformationInputSchema,
+    outputSchema: SummarizeInformationOutputSchema,
+  },
+  async (flowInput) => {
+    const {output} = await summarizeInformationPrompt(flowInput);
+    return output!;
+  }
+);
+
+export async function summarizeInformation(input: SummarizeInformationInput): Promise<SummarizeInformationOutput> {
   return summarizeInformationFlow(input);
 }

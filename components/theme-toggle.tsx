@@ -6,7 +6,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/hooks/use-theme";
 
 export function ThemeToggle() {
-  const [activeTheme, setPreferredTheme, _preferredThemeSetting] = useTheme();
+  const { activeTheme, setPreferredTheme } = useTheme();
 
   const handleToggle = () => {
     // This toggle will switch the preferred theme between light and dark explicitly.

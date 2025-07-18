@@ -8,7 +8,7 @@
  * - EditImageOutput - The return type for the editImage function.
  */
 
-import { getAi } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const EditImageInputSchema = z.object({
@@ -30,36 +30,34 @@ const EditImageOutputSchema = z.object({
 });
 export type EditImageOutput = z.infer<typeof EditImageOutputSchema>;
 
+const editImageFlow = ai.defineFlow(
+  {
+    name: 'editImageFlow',
+    inputSchema: EditImageInputSchema,
+    outputSchema: EditImageOutputSchema,
+  },
+  async (flowInput) => {
+    const { media } = await ai.generate({
+      model: 'googleai/gemini-2.0-flash-preview-image-generation',
+      prompt: [
+          { media: { url: flowInput.imageDataUri } },
+          { text: flowInput.prompt }
+      ],
+      config: {
+        responseModalities: ['TEXT', 'IMAGE'],
+      },
+    });
+
+    if (!media || !media.url) {
+      throw new Error('Image editing failed to produce an image.');
+    }
+
+    return { imageDataUri: media.url };
+  }
+);
+
 export async function editImage(
   input: EditImageInput
 ): Promise<EditImageOutput> {
-  const ai = getAi();
-
-  const editImageFlow = ai.defineFlow(
-    {
-      name: 'editImageFlow',
-      inputSchema: EditImageInputSchema,
-      outputSchema: EditImageOutputSchema,
-    },
-    async (flowInput) => {
-      const { media } = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-preview-image-generation',
-        prompt: [
-            { media: { url: flowInput.imageDataUri } },
-            { text: flowInput.prompt }
-        ],
-        config: {
-          responseModalities: ['TEXT', 'IMAGE'],
-        },
-      });
-
-      if (!media || !media.url) {
-        throw new Error('Image editing failed to produce an image.');
-      }
-
-      return { imageDataUri: media.url };
-    }
-  );
-
   return editImageFlow(input);
 }

@@ -2,7 +2,7 @@
  * @fileOverview A Genkit tool for performing web searches using the Tavily API.
  */
 
-import { getAi } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import axios from 'axios';
 
@@ -28,9 +28,14 @@ const TavilyResponseSchema = z.object({
   results: z.array(TavilySearchResultSchema),
 });
 
+let searchTool: any = null;
+
 export function getSearchTool() {
-  const ai = getAi();
-  return ai.defineTool(
+  if (searchTool) {
+    return searchTool;
+  }
+  
+  searchTool = ai.defineTool(
     {
       name: 'searchTool',
       description:
@@ -95,4 +100,6 @@ export function getSearchTool() {
       }
     }
   );
+  
+  return searchTool;
 }

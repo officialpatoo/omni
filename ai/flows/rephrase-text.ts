@@ -7,7 +7,7 @@
  * - RephraseTextOutput - The return type for the rephraseText function.
  */
 
-import { getAi } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const RephraseTextInputSchema = z.object({
@@ -23,23 +23,12 @@ const RephraseTextOutputSchema = z.object({
 });
 export type RephraseTextOutput = z.infer<typeof RephraseTextOutputSchema>;
 
-export async function rephraseText(
-  input: RephraseTextInput,
-): Promise<RephraseTextOutput> {
-  const ai = getAi();
 
-  const rephraseTextFlow = ai.defineFlow(
-    {
-      name: 'rephraseTextFlow',
-      inputSchema: RephraseTextInputSchema,
-      outputSchema: RephraseTextOutputSchema,
-    },
-    async (flowInput) => {
-      const prompt = ai.definePrompt({
-        name: 'rephraseTextPrompt',
-        input: { schema: RephraseTextInputSchema },
-        output: { schema: RephraseTextOutputSchema },
-        prompt: `You are an expert editor. Rephrase the following text to be {{style}}. Do not add any commentary, just provide the rephrased text.
+const prompt = ai.definePrompt({
+  name: 'rephraseTextPrompt',
+  input: { schema: RephraseTextInputSchema },
+  output: { schema: RephraseTextOutputSchema },
+  prompt: `You are an expert editor. Rephrase the following text to be {{style}}. Do not add any commentary, just provide the rephrased text.
 
 Original text:
 """
@@ -47,10 +36,22 @@ Original text:
 """
 
 Rephrased text:`,
-      });
-      const { output } = await prompt(flowInput);
-      return output!;
-    },
-  );
+});
+
+const rephraseTextFlow = ai.defineFlow(
+  {
+    name: 'rephraseTextFlow',
+    inputSchema: RephraseTextInputSchema,
+    outputSchema: RephraseTextOutputSchema,
+  },
+  async (flowInput) => {
+    const { output } = await prompt(flowInput);
+    return output!;
+  },
+);
+
+export async function rephraseText(
+  input: RephraseTextInput,
+): Promise<RephraseTextOutput> {
   return rephraseTextFlow(input);
 }

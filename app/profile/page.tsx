@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,7 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserCircle, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck, Settings, Sparkles, Zap, Mail } from 'lucide-react';
+import { UserCircle, Save, Loader2, Bell, Palette, Cpu, CreditCard, ShieldCheck, Settings, Sparkles, Zap, Mail, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile, AppSettings } from '@/types';
 import { useTheme, type PreferredTheme } from '@/hooks/use-theme';
@@ -42,12 +43,12 @@ export default function ProfilePage() {
   const { user, isLoading: isLoadingAuth, resetPassword } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
-  const [_activeTheme, setPreferredThemeGlobal, preferredThemeFromHook] = useTheme();
+  const { activeTheme, preferredTheme, setPreferredTheme } = useTheme();
 
   const [profile, setProfile] = useState<UserProfile>({ displayName: '', bio: '' });
   const [appSettings, setAppSettings] = useState<AppSettings>({
     aiModel: 'googleai/gemini-2.0-flash',
-    theme: preferredThemeFromHook,
+    theme: preferredTheme,
     notificationsEnabled: true,
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
@@ -62,9 +63,10 @@ export default function ProfilePage() {
   }, [user, isLoadingAuth, router]);
 
   useEffect(() => {
-    async function loadUserProfile() {
+    async function loadData() {
       if (user) {
         setIsLoadingProfile(true);
+        // Load Profile
         const userProfile = await getProfile(user.uid);
         if (userProfile) {
           setProfile(userProfile);
@@ -76,35 +78,31 @@ export default function ProfilePage() {
             email: user.email || ''
           });
         }
+        
+        // Load App Settings from localStorage
+        const settingsKey = getAppSettingsStorageKey();
+        if (settingsKey) {
+          const storedSettingsData = localStorage.getItem(settingsKey);
+          if (storedSettingsData) {
+            try {
+              const parsedSettings = JSON.parse(storedSettingsData) as Partial<AppSettings>;
+              setAppSettings(prev => ({...prev, ...parsedSettings}));
+            } catch(e) {
+              console.error("Failed to parse app settings", e);
+            }
+          }
+        }
         setIsLoadingProfile(false);
       }
     }
-    loadUserProfile();
-  }, [user]);
+    loadData();
+  }, [user, getAppSettingsStorageKey]);
 
+   // Sync appSettings state with the theme from the useTheme hook
   useEffect(() => {
-    if (user) {
-      const settingsKey = getAppSettingsStorageKey();
-      if (settingsKey) {
-        const storedSettingsData = localStorage.getItem(settingsKey);
-        if (storedSettingsData) {
-          const parsedSettings = JSON.parse(storedSettingsData) as AppSettings;
-          const effectiveThemePreference = parsedSettings.theme || preferredThemeFromHook;
-          
-          setAppSettings({
-            ...appSettings,
-            ...parsedSettings,
-            theme: effectiveThemePreference
-          });
-          
-          setPreferredThemeGlobal(effectiveThemePreference);
-        } else {
-           setAppSettings(prev => ({...prev, theme: preferredThemeFromHook }));
-        }
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, preferredThemeFromHook, setPreferredThemeGlobal, getAppSettingsStorageKey]);
+    setAppSettings(prev => ({...prev, theme: preferredTheme}));
+  }, [preferredTheme]);
+
 
   const handleProfileChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -130,9 +128,12 @@ export default function ProfilePage() {
       const newSettings = { ...prev, [key]: value };
       const settingsKey = getAppSettingsStorageKey();
       if (user && settingsKey) {
-        localStorage.setItem(settingsKey, JSON.stringify(newSettings));
+        // We only store non-theme settings here, as theme is handled by useTheme hook
+        const { theme, ...settingsToStore } = newSettings;
+        localStorage.setItem(settingsKey, JSON.stringify(settingsToStore));
+        
         if (key === 'theme') {
-          setPreferredThemeGlobal(value as PreferredTheme);
+          setPreferredTheme(value as PreferredTheme);
         }
         if (key === 'aiModel') {
             toast({ title: "AI Model Updated", description: `Default model set to ${availableModels.find(m => m.id === value)?.name}.` });
@@ -167,8 +168,18 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto max-w-4xl py-8 px-4 sm:px-6 lg:px-8">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Profile & Settings</h1>
-        <p className="mt-2 text-lg text-muted-foreground">Manage your account details and application preferences.</p>
+        <div className="flex items-center gap-4">
+           <Link href="/" passHref>
+             <Button variant="outline" size="icon" className="h-8 w-8">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only">Back to Home</span>
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Profile & Settings</h1>
+            <p className="mt-1 text-lg text-muted-foreground">Manage your account details and application preferences.</p>
+          </div>
+        </div>
       </header>
 
       <div className="space-y-8">
@@ -351,5 +362,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

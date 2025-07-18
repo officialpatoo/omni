@@ -7,7 +7,7 @@
  * - TextToSpeechOutput - The return type for the textToSpeech function.
  */
 
-import { getAi } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import wav from 'wav';
 import { googleAI } from '@genkit-ai/googleai';
@@ -51,45 +51,45 @@ async function toWav(
   });
 }
 
+const textToSpeechFlow = ai.defineFlow(
+  {
+    name: 'textToSpeechFlow',
+    inputSchema: TextToSpeechInputSchema,
+    outputSchema: TextToSpeechOutputSchema,
+  },
+  async (flowInput) => {
+    const { media } = await ai.generate({
+      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      config: {
+        responseModalities: ['AUDIO'],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Algenib' },
+          },
+        },
+      },
+      prompt: flowInput.text,
+    });
+
+    if (!media || !media.url) {
+      throw new Error('Text-to-speech failed to produce audio.');
+    }
+    
+    const audioBuffer = Buffer.from(
+      media.url.substring(media.url.indexOf(',') + 1),
+      'base64'
+    );
+    
+    const wavBase64 = await toWav(audioBuffer);
+
+    return {
+      audioDataUri: 'data:audio/wav;base64,' + wavBase64,
+    };
+  },
+);
+
 export async function textToSpeech(
   input: TextToSpeechInput,
 ): Promise<TextToSpeechOutput> {
-  const ai = getAi();
-  const textToSpeechFlow = ai.defineFlow(
-    {
-      name: 'textToSpeechFlow',
-      inputSchema: TextToSpeechInputSchema,
-      outputSchema: TextToSpeechOutputSchema,
-    },
-    async (flowInput) => {
-      const { media } = await ai.generate({
-        model: googleAI.model('gemini-2.5-flash-preview-tts'),
-        config: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Algenib' },
-            },
-          },
-        },
-        prompt: flowInput.text,
-      });
-
-      if (!media || !media.url) {
-        throw new Error('Text-to-speech failed to produce audio.');
-      }
-      
-      const audioBuffer = Buffer.from(
-        media.url.substring(media.url.indexOf(',') + 1),
-        'base64'
-      );
-      
-      const wavBase64 = await toWav(audioBuffer);
-
-      return {
-        audioDataUri: 'data:audio/wav;base64,' + wavBase64,
-      };
-    },
-  );
   return textToSpeechFlow(input);
 }

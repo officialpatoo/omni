@@ -7,7 +7,7 @@
  * - ExpandIdeaOutput - The return type for the expandIdea function.
  */
 
-import { getAi } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const ExpandIdeaInputSchema = z.object({
@@ -20,23 +20,11 @@ const ExpandIdeaOutputSchema = z.object({
 });
 export type ExpandIdeaOutput = z.infer<typeof ExpandIdeaOutputSchema>;
 
-export async function expandIdea(
-  input: ExpandIdeaInput,
-): Promise<ExpandIdeaOutput> {
-  const ai = getAi();
-
-  const expandIdeaFlow = ai.defineFlow(
-    {
-      name: 'expandIdeaFlow',
-      inputSchema: ExpandIdeaInputSchema,
-      outputSchema: ExpandIdeaOutputSchema,
-    },
-    async (flowInput) => {
-      const prompt = ai.definePrompt({
-        name: 'expandIdeaPrompt',
-        input: { schema: ExpandIdeaInputSchema },
-        output: { schema: ExpandIdeaOutputSchema },
-        prompt: `You are a helpful assistant that elaborates on ideas. Expand on the following text, providing more detail, depth, and examples where appropriate.
+const prompt = ai.definePrompt({
+  name: 'expandIdeaPrompt',
+  input: { schema: ExpandIdeaInputSchema },
+  output: { schema: ExpandIdeaOutputSchema },
+  prompt: `You are a helpful assistant that elaborates on ideas. Expand on the following text, providing more detail, depth, and examples where appropriate.
 
 Original text:
 """
@@ -44,11 +32,22 @@ Original text:
 """
 
 Expanded version:`,
-      });
-      const { output } = await prompt(flowInput);
-      return output!;
-    },
-  );
+});
 
+const expandIdeaFlow = ai.defineFlow(
+  {
+    name: 'expandIdeaFlow',
+    inputSchema: ExpandIdeaInputSchema,
+    outputSchema: ExpandIdeaOutputSchema,
+  },
+  async (flowInput) => {
+    const { output } = await prompt(flowInput);
+    return output!;
+  },
+);
+
+export async function expandIdea(
+  input: ExpandIdeaInput,
+): Promise<ExpandIdeaOutput> {
   return expandIdeaFlow(input);
 }

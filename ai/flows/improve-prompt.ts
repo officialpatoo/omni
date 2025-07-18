@@ -7,7 +7,7 @@
  * - ImprovePromptOutput - The return type for the improvePrompt function.
  */
 
-import { getAi } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const ImprovePromptInputSchema = z.object({
@@ -23,22 +23,11 @@ const ImprovePromptOutputSchema = z.object({
 });
 export type ImprovePromptOutput = z.infer<typeof ImprovePromptOutputSchema>;
 
-export async function improvePrompt(
-  input: ImprovePromptInput,
-): Promise<ImprovePromptOutput> {
-  const ai = getAi();
-  const improvePromptFlow = ai.defineFlow(
-    {
-      name: 'improvePromptFlow',
-      inputSchema: ImprovePromptInputSchema,
-      outputSchema: ImprovePromptOutputSchema,
-    },
-    async (flowInput) => {
-      const prompt = ai.definePrompt({
-        name: 'improvePromptTemplate',
-        input: { schema: ImprovePromptInputSchema },
-        output: { schema: ImprovePromptOutputSchema },
-        prompt: `You are a prompt engineering expert. Your goal is to help users improve their prompts to get better responses from an AI.
+const prompt = ai.definePrompt({
+  name: 'improvePromptTemplate',
+  input: { schema: ImprovePromptInputSchema },
+  output: { schema: ImprovePromptOutputSchema },
+  prompt: `You are a prompt engineering expert. Your goal is to help users improve their prompts to get better responses from an AI.
 
 Analyze the user's original prompt and the AI's response. Then, suggest a revised prompt that is clearer, more specific, and provides more context. The improved prompt should be designed to elicit a more detailed and accurate answer from the AI.
 
@@ -55,10 +44,22 @@ AI's Response:
 """
 
 Improved Prompt Suggestion:`,
-      });
-      const { output } = await prompt(flowInput);
-      return output!;
-    },
-  );
+});
+
+const improvePromptFlow = ai.defineFlow(
+  {
+    name: 'improvePromptFlow',
+    inputSchema: ImprovePromptInputSchema,
+    outputSchema: ImprovePromptOutputSchema,
+  },
+  async (flowInput) => {
+    const { output } = await prompt(flowInput);
+    return output!;
+  },
+);
+
+export async function improvePrompt(
+  input: ImprovePromptInput,
+): Promise<ImprovePromptOutput> {
   return improvePromptFlow(input);
 }

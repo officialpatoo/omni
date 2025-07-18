@@ -7,7 +7,7 @@
  * - TranslateTextOutput - The return type for the translateText function.
  */
 
-import { getAi } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const TranslateTextInputSchema = z.object({
@@ -21,22 +21,12 @@ const TranslateTextOutputSchema = z.object({
 });
 export type TranslateTextOutput = z.infer<typeof TranslateTextOutputSchema>;
 
-export async function translateText(
-  input: TranslateTextInput,
-): Promise<TranslateTextOutput> {
-  const ai = getAi();
-  const translateTextFlow = ai.defineFlow(
-    {
-      name: 'translateTextFlow',
-      inputSchema: TranslateTextInputSchema,
-      outputSchema: TranslateTextOutputSchema,
-    },
-    async (flowInput) => {
-      const prompt = ai.definePrompt({
-        name: 'translateTextPrompt',
-        input: { schema: TranslateTextInputSchema },
-        output: { schema: TranslateTextOutputSchema },
-        prompt: `You are a skilled translator. Translate the following text into {{language}}. Provide only the translated text.
+
+const prompt = ai.definePrompt({
+  name: 'translateTextPrompt',
+  input: { schema: TranslateTextInputSchema },
+  output: { schema: TranslateTextOutputSchema },
+  prompt: `You are a skilled translator. Translate the following text into {{language}}. Provide only the translated text.
 
 Original text:
 """
@@ -44,10 +34,22 @@ Original text:
 """
 
 Translated text:`,
-      });
-      const { output } = await prompt(flowInput);
-      return output!;
-    },
-  );
+});
+
+const translateTextFlow = ai.defineFlow(
+  {
+    name: 'translateTextFlow',
+    inputSchema: TranslateTextInputSchema,
+    outputSchema: TranslateTextOutputSchema,
+  },
+  async (flowInput) => {
+    const { output } = await prompt(flowInput);
+    return output!;
+  },
+);
+
+export async function translateText(
+  input: TranslateTextInput,
+): Promise<TranslateTextOutput> {
   return translateTextFlow(input);
 }

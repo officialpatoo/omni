@@ -3,7 +3,7 @@ import { googleAI } from '@genkit-ai/googleai';
 
 let aiInstance: Genkit | undefined;
 
-export function getAi(): Genkit {
+function initializeGenkit(): Genkit {
   if (aiInstance) {
     return aiInstance;
   }
@@ -30,4 +30,14 @@ export function getAi(): Genkit {
   });
 
   return aiInstance;
+}
+
+// Export a single, initialized instance of Genkit
+export const ai = initializeGenkit();
+
+/**
+ * @deprecated Use the exported `ai` instance directly instead.
+ */
+export function getAiInstance(): Genkit {
+  return ai;
 }

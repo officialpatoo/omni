@@ -6,62 +6,55 @@ import { useState, useEffect, useCallback } from 'react';
 type ActiveTheme = 'light' | 'dark';
 export type PreferredTheme = 'light' | 'dark' | 'system';
 
-export function useTheme(): [ActiveTheme, (preference: PreferredTheme) => void, PreferredTheme] {
-  // State for the user's preferred theme setting ('light', 'dark', or 'system')
-  const [preferredThemeSetting, setPreferredThemeSetting] = useState<PreferredTheme>('system');
-  // State for the currently active theme ('light' or 'dark')
+// Consistent key for storing theme preference
+const THEME_STORAGE_KEY = 'patooworld_preferred_theme';
+
+export function useTheme() {
+  const [preferredTheme, setPreferredTheme] = useState<PreferredTheme>('system');
   const [activeTheme, setActiveTheme] = useState<ActiveTheme>('light');
 
-  // Effect to initialize preferred theme from localStorage (or default to 'system')
-  // and then determine and apply the initial active theme.
-  useEffect(() => {
-    const storedPreferredTheme = localStorage.getItem('patoovision-preferred-theme') as PreferredTheme | null;
-    const initialPreference = storedPreferredTheme || 'system';
-    setPreferredThemeSetting(initialPreference);
-
-    let currentActiveTheme: ActiveTheme;
-    if (initialPreference === 'system') {
-      currentActiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    } else {
-      currentActiveTheme = initialPreference;
-    }
-    setActiveTheme(currentActiveTheme);
+  // Function to apply the theme to the document
+  const applyTheme = (theme: ActiveTheme) => {
     document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(currentActiveTheme);
-  }, []);
+    document.documentElement.classList.add(theme);
+    setActiveTheme(theme);
+  };
 
-  // Effect to listen to system theme changes if the preferred theme is 'system'.
-  // This updates the active theme when the OS theme changes.
-  useEffect(() => {
-    if (preferredThemeSetting === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => {
-        const newActiveSystemTheme = mediaQuery.matches ? 'dark' : 'light';
-        setActiveTheme(newActiveSystemTheme);
-        document.documentElement.classList.remove('light', 'dark');
-        document.documentElement.classList.add(newActiveSystemTheme);
-      };
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-  }, [preferredThemeSetting]);
-
-  // Function to update the user's theme preference.
-  // This updates localStorage, the preferredThemeSetting state, and the activeTheme state.
-  const updateThemePreference = useCallback((preference: PreferredTheme) => {
-    setPreferredThemeSetting(preference);
-    localStorage.setItem('patoovision-preferred-theme', preference);
-
-    let newActiveTheme: ActiveTheme;
+  // Function to determine the active theme based on preference
+  const getActiveTheme = (preference: PreferredTheme): ActiveTheme => {
     if (preference === 'system') {
-      newActiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    } else {
-      newActiveTheme = preference;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
-    setActiveTheme(newActiveTheme);
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(newActiveTheme);
+    return preference;
+  };
+
+  // Initialize theme from localStorage on component mount
+  useEffect(() => {
+    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY) as PreferredTheme | null;
+    const initialPreference = storedTheme || 'system';
+    setPreferredTheme(initialPreference);
+    applyTheme(getActiveTheme(initialPreference));
   }, []);
 
-  return [activeTheme, updateThemePreference, preferredThemeSetting];
+  // Listen for system theme changes if preference is 'system'
+  useEffect(() => {
+    if (preferredTheme !== 'system') return;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      applyTheme(mediaQuery.matches ? 'dark' : 'light');
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [preferredTheme]);
+
+  // Public function to update the theme preference
+  const updateThemePreference = useCallback((preference: PreferredTheme) => {
+    localStorage.setItem(THEME_STORAGE_KEY, preference);
+    setPreferredTheme(preference);
+    applyTheme(getActiveTheme(preference));
+  }, []);
+
+  return { activeTheme, preferredTheme, setPreferredTheme: updateThemePreference };
 }

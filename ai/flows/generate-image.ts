@@ -8,7 +8,7 @@
  * - GenerateImageOutput - The return type for the generateImage function.
  */
 
-import { getAi } from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
 const GenerateImageInputSchema = z.object({
@@ -25,33 +25,31 @@ const GenerateImageOutputSchema = z.object({
 });
 export type GenerateImageOutput = z.infer<typeof GenerateImageOutputSchema>;
 
+const generateImageFlow = ai.defineFlow(
+  {
+    name: 'generateImageFlow',
+    inputSchema: GenerateImageInputSchema,
+    outputSchema: GenerateImageOutputSchema,
+  },
+  async (flowInput) => {
+    const { media } = await ai.generate({
+      model: 'googleai/gemini-2.0-flash-preview-image-generation',
+      prompt: flowInput.prompt,
+      config: {
+        responseModalities: ['TEXT', 'IMAGE'],
+      },
+    });
+
+    if (!media || !media.url) {
+      throw new Error('Image generation failed to produce an image.');
+    }
+
+    return { imageDataUri: media.url };
+  }
+);
+
 export async function generateImage(
   input: GenerateImageInput
 ): Promise<GenerateImageOutput> {
-  const ai = getAi();
-
-  const generateImageFlow = ai.defineFlow(
-    {
-      name: 'generateImageFlow',
-      inputSchema: GenerateImageInputSchema,
-      outputSchema: GenerateImageOutputSchema,
-    },
-    async (flowInput) => {
-      const { media } = await ai.generate({
-        model: 'googleai/gemini-2.0-flash-preview-image-generation',
-        prompt: flowInput.prompt,
-        config: {
-          responseModalities: ['TEXT', 'IMAGE'],
-        },
-      });
-
-      if (!media || !media.url) {
-        throw new Error('Image generation failed to produce an image.');
-      }
-
-      return { imageDataUri: media.url };
-    }
-  );
-
   return generateImageFlow(input);
 }
