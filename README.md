@@ -1,4 +1,4 @@
-#PATOOWORLD OMNI o1 - Your AI-Powered Assistant
+x#PATOOWORLD OMNI o1 - Your AI-Powered Assistant
 
 Welcome to OMNI, a modern, full-stack web application that showcases the power of generative AI. This application serves as a versatile chat interface powered by Google's Gemini models through Genkit, featuring real-time conversation, image analysis, image generation, and a suite of tools to enhance user interaction.
 
